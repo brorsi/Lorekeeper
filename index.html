@@ -276,7 +276,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--b0);color:var(
 </style>
 </head>
 <body>
-<div id="ldr"><div class="llogo">⚔ LOREKEEPER</div><div class="lbar"><div class="lbf"></div></div><div class="ltxt">Opening the tome...</div></div>
+<div id="ldr"><div class="llogo">⚔ LOREKEEPER</div><div class="lbar"><div class="lbf"></div></div><div class="ltxt" id="ldrtxt">Opening the tome...</div></div>
 
 <div id="setup">
   <div class="sui">
@@ -471,34 +471,53 @@ async function api(p){
 }
 
 // ── BOOT ──────────────────────────────────────────────
+function setLdrTxt(t){const el=document.getElementById('ldrtxt');if(el)el.textContent=t;}
+function hideLdr(){document.getElementById('ldr').style.display='none';}
+
 async function boot(){
   S.api=localStorage.getItem(AKEY)||'';
   S.wid=localStorage.getItem(WKEY)||'';
-  document.getElementById('ldr').style.display='none';
-  if(!S.api){showSetup(false);return;}
+  // Keep loader visible — hide only when we know what to show
+  if(!S.api){hideLdr();showSetup(false);return;}
+  // If we have a known world, show its name immediately in the loader
+  const savedName=localStorage.getItem(WNKEY);
+  if(S.wid&&savedName){
+    setLdrTxt('Entering '+savedName+'…');
+    document.getElementById('wsn').textContent=savedName;
+  } else {
+    setLdrTxt('Connecting…');
+  }
   try{
     await api({action:'init'});
+    setLdrTxt('Loading worlds…');
     S.worlds=await api({action:'getWorlds'})||[];
     // If saved world not yet in list, re-add it locally so it isn't lost
     if(S.wid&&!S.worlds.find(w=>w.id===S.wid)){
-      const wname=localStorage.getItem(WNKEY)||S.wid;
-      S.worlds.push({id:S.wid,name:wname,description:''});
+      S.worlds.push({id:S.wid,name:savedName||S.wid,description:''});
     }
-    if(!S.wid||!S.worlds.length){showSetup(true);return;}
+    if(!S.wid||!S.worlds.length){hideLdr();showSetup(true);return;}
+    setLdrTxt('Opening your world…');
     await enterWorld(S.wid,false);
+    hideLdr();
   }catch(e){
-    // API failed but we know which world — try to enter it anyway
+    // API failed — if we know the world, try loading it directly
     if(S.wid){
-      const wname=localStorage.getItem(WNKEY)||S.wid;
-      document.getElementById('wsn').textContent=wname;
-      toast('Connection slow — loading world…','');
-      try{await loadAll();}catch(e2){}
-      const lv=localStorage.getItem(VKEY);
-      if(lv&&lv.startsWith('list_'))goList(lv.slice(5),true);
-      else if(lv&&!['edit','det'].includes(lv))goView(lv,true);
-      else goView('dash',true);
+      setLdrTxt('Connecting to Google Sheet…');
+      if(savedName)S.worlds=[{id:S.wid,name:savedName,description:''}];
+      try{
+        await loadAll();
+        hideLdr();
+        const lv=localStorage.getItem(VKEY);
+        if(lv&&lv.startsWith('list_'))goList(lv.slice(5),true);
+        else if(lv&&!['edit','det'].includes(lv))goView(lv,true);
+        else goView('dash',true);
+      }catch(e2){
+        hideLdr();
+        showSetup(true);
+        toast('Could not load world — please select it again','err');
+      }
     } else {
-      showSetup(false);toast('Could not connect — re-enter your URL','err');
+      hideLdr();showSetup(false);toast('Could not connect — re-enter your URL','err');
     }
   }
 }
