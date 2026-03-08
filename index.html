@@ -3,7 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lorekeeper">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
 <title>Lorekeeper</title>
+<link rel="manifest" href="data:application/json,{
+  &quot;name&quot;:&quot;Lorekeeper&quot;,
+  &quot;short_name&quot;:&quot;Lorekeeper&quot;,
+  &quot;display&quot;:&quot;standalone&quot;,
+  &quot;background_color&quot;:&quot;#0a0a0f&quot;,
+  &quot;theme_color&quot;:&quot;#0a0a0f&quot;,
+  &quot;start_url&quot;:&quot;.&quot;,
+  &quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230a0a0f'/><text y='75' x='15' font-size='70'>⚔</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]
+}" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
 <style>
@@ -913,7 +927,7 @@ html, body {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     z-index: 200;
-    width: 80vw;
+    width: 82vw;
   }
   #sidebar.mobile-open { transform: translateX(0); }
   #sidebar-overlay {
@@ -927,6 +941,10 @@ html, body {
 
   #btn-sidebar-toggle { display: flex !important; }
   #search-bar { display: none !important; }
+  .topbar-world-select { display: none !important; }
+  #btn-new-world { display: none !important; }
+  .topbar-logo { font-size: 0.9rem; letter-spacing: 0.08em; }
+  #mobile-world-controls { display: flex !important; }
 
   .detail-sidebar { display: none; }
   #view-detail { flex-direction: column; }
@@ -937,8 +955,16 @@ html, body {
   .dash-stats { grid-template-columns: repeat(3, 1fr); }
   .entity-grid { grid-template-columns: 1fr; padding: 12px; }
   #fab { display: flex; }
-
   #view-timeline { padding: 16px; }
+  .modal { max-width: calc(100vw - 24px); }
+  .search-modal { max-width: calc(100vw - 24px); }
+
+  /* iOS safe area for notch/home indicator */
+  #topbar {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  #app { padding-bottom: env(safe-area-inset-bottom); }
 }
 
 #btn-sidebar-toggle {
@@ -997,6 +1023,15 @@ html, body {
   <div id="body">
     <!-- SIDEBAR -->
     <div id="sidebar">
+      <!-- Mobile-only world selector -->
+      <div id="mobile-world-controls" style="display:none;padding:12px 12px 0;flex-direction:column;gap:8px;">
+        <select id="world-select-mobile" class="topbar-world-select" style="width:100%;max-width:100%;" onchange="onWorldChangeMobile()">
+          <option value="">— Select World —</option>
+        </select>
+        <button class="btn-primary" style="width:100%;font-size:0.7rem;padding:7px;" onclick="openNewWorldModal();closeMobileSidebar()">+ New World</button>
+      </div>
+      <div class="sidebar-divider" style="margin-top:12px;"></div>
+
       <div class="sidebar-section">
         <div class="sidebar-section-label">Navigate</div>
         <div class="sidebar-item active" data-view="dashboard" onclick="navTo('dashboard')">
@@ -1470,14 +1505,38 @@ function renderWorldSelect() {
     if (w.id === state.currentWorldId) opt.selected = true;
     sel.appendChild(opt);
   });
+  syncMobileWorldSelect();
 }
 
 function onWorldChange() {
   const sel = document.getElementById('world-select');
   state.currentWorldId = sel.value;
   localStorage.setItem('lorekeeper_world', state.currentWorldId);
+  syncMobileWorldSelect();
   loadAllData();
   navTo('dashboard');
+}
+function onWorldChangeMobile() {
+  const sel = document.getElementById('world-select-mobile');
+  state.currentWorldId = sel.value;
+  localStorage.setItem('lorekeeper_world', state.currentWorldId);
+  // sync desktop select
+  const desk = document.getElementById('world-select');
+  if (desk) desk.value = state.currentWorldId;
+  loadAllData();
+  navTo('dashboard');
+  closeMobileSidebar();
+}
+function syncMobileWorldSelect() {
+  const mob = document.getElementById('world-select-mobile');
+  if (!mob) return;
+  mob.innerHTML = '<option value="">— Select World —</option>';
+  state.worlds.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.id; opt.textContent = w.name;
+    if (w.id === state.currentWorldId) opt.selected = true;
+    mob.appendChild(opt);
+  });
 }
 
 function openNewWorldModal() {
@@ -2404,9 +2463,19 @@ async function createCategory() {
 function openModal(title, bodyHtml, buttons=[]) {
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-body').innerHTML = bodyHtml;
-  document.getElementById('modal-footer').innerHTML = buttons.map(b =>
-    `<button class="${b.danger?'btn-danger':b.primary?'btn-primary':'btn-secondary'}" onclick="${b.onclick}">${b.label}</button>`
-  ).join('');
+  const footer = document.getElementById('modal-footer');
+  footer.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = b.danger ? 'btn-danger' : b.primary ? 'btn-primary' : 'btn-secondary';
+    btn.textContent = b.label;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // eslint-disable-next-line no-new-func
+      new Function(b.onclick)();
+    });
+    footer.appendChild(btn);
+  });
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModal() {
