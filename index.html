@@ -1,0 +1,2525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lorekeeper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --stone-950: #0a0a0f;
+  --stone-900: #111118;
+  --stone-850: #16161f;
+  --stone-800: #1c1c28;
+  --stone-750: #222232;
+  --stone-700: #2a2a3d;
+  --stone-600: #3a3a52;
+  --stone-500: #5a5a7a;
+  --stone-400: #8888aa;
+  --stone-300: #aaaac4;
+  --stone-200: #ccccde;
+  --stone-100: #e8e8f0;
+  --silver:    #c8d0e0;
+  --silver-bright: #e0e8f8;
+  --gold:      #c8a84b;
+  --gold-dim:  #8a7030;
+  --gold-glow: rgba(200,168,75,0.15);
+  --accent:    #7a8fc8;
+  --accent-dim:#3a4870;
+  --danger:    #c84b4b;
+  --success:   #4bc87a;
+
+  --font-display: 'Cinzel', serif;
+  --font-body:    'Crimson Pro', serif;
+
+  --radius:   6px;
+  --radius-lg:12px;
+  --sidebar-w: 240px;
+  --header-h:  52px;
+  --transition: 0.18s ease;
+}
+
+html, body {
+  height: 100%; width: 100%;
+  overflow: hidden;
+  background: var(--stone-950);
+  color: var(--stone-200);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--stone-600); border-radius: 2px; }
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+#app { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+
+/* ── TOP BAR ────────────────────────────────────────────── */
+#topbar {
+  height: var(--header-h);
+  background: var(--stone-900);
+  border-bottom: 1px solid var(--stone-700);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  z-index: 100;
+  position: relative;
+}
+#topbar::after {
+  content:'';
+  position:absolute; bottom:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+.topbar-logo {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+}
+.topbar-logo svg { width:20px; height:20px; }
+.topbar-world-select {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-600);
+  color: var(--stone-200);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  max-width: 180px;
+}
+.topbar-world-select:focus { outline: none; border-color: var(--gold-dim); }
+#btn-new-world {
+  background: none; border: 1px solid var(--gold-dim);
+  color: var(--gold); font-family: var(--font-display);
+  font-size: 0.65rem; letter-spacing: 0.08em;
+  padding: 4px 10px; border-radius: var(--radius);
+  cursor: pointer; white-space: nowrap;
+  transition: var(--transition);
+}
+#btn-new-world:hover { background: var(--gold-glow); border-color: var(--gold); }
+.topbar-spacer { flex: 1; }
+#search-bar {
+  display: flex; align-items: center;
+  background: var(--stone-800);
+  border: 1px solid var(--stone-600);
+  border-radius: var(--radius);
+  padding: 0 10px; gap: 6px;
+  transition: var(--transition);
+}
+#search-bar:focus-within { border-color: var(--accent); }
+#search-input {
+  background: none; border: none; outline: none;
+  color: var(--stone-100); font-family: var(--font-body);
+  font-size: 0.9rem; width: 180px; padding: 5px 0;
+}
+#search-input::placeholder { color: var(--stone-500); }
+.search-hint { color: var(--stone-500); font-size: 0.75rem; }
+#btn-settings {
+  background: none; border: none; cursor: pointer;
+  color: var(--stone-400); padding: 6px;
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+#btn-settings:hover { color: var(--silver); background: var(--stone-800); }
+
+/* ── MAIN BODY ──────────────────────────────────────────── */
+#body { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  background: var(--stone-900);
+  border-right: 1px solid var(--stone-700);
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+  transition: transform var(--transition);
+  position: relative;
+  z-index: 50;
+}
+#sidebar::after {
+  content:'';
+  position:absolute; top:0; right:0; bottom:0; width:1px;
+  background: linear-gradient(180deg, transparent, var(--stone-600) 30%, var(--stone-600) 70%, transparent);
+}
+
+.sidebar-section { padding: 12px 0 4px; }
+.sidebar-section-label {
+  font-family: var(--font-display);
+  font-size: 0.6rem; letter-spacing: 0.15em;
+  color: var(--stone-500); text-transform: uppercase;
+  padding: 0 16px 6px;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; cursor: pointer;
+  font-size: 0.9rem; color: var(--stone-300);
+  border-left: 2px solid transparent;
+  transition: var(--transition);
+  user-select: none;
+}
+.sidebar-item:hover { background: var(--stone-800); color: var(--silver); }
+.sidebar-item.active {
+  background: var(--stone-800);
+  color: var(--gold);
+  border-left-color: var(--gold);
+}
+.sidebar-item .icon { width: 16px; text-align: center; flex-shrink: 0; opacity: 0.8; }
+.sidebar-item.active .icon { opacity: 1; }
+.sidebar-count {
+  margin-left: auto;
+  font-size: 0.7rem;
+  background: var(--stone-700);
+  color: var(--stone-400);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.sidebar-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--stone-700), transparent);
+  margin: 8px 16px;
+}
+
+/* ── MAIN PANEL ─────────────────────────────────────────── */
+#main {
+  flex: 1; overflow-y: auto;
+  background: var(--stone-850);
+  position: relative;
+}
+
+/* ── VIEWS ──────────────────────────────────────────────── */
+.view { display: none; height: 100%; }
+.view.active { display: flex; flex-direction: column; }
+
+/* ── DASHBOARD ──────────────────────────────────────────── */
+#view-dashboard { padding: 32px; gap: 24px; overflow-y: auto; }
+.dash-header { }
+.dash-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem; color: var(--silver-bright);
+  letter-spacing: 0.05em;
+}
+.dash-subtitle { color: var(--stone-400); font-size: 0.95rem; margin-top: 4px; }
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+.stat-card {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-700);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  text-align: center;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.stat-card:hover { border-color: var(--stone-500); background: var(--stone-750); }
+.stat-icon { font-size: 1.5rem; margin-bottom: 6px; }
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 1.4rem; color: var(--gold);
+}
+.stat-label { font-size: 0.75rem; color: var(--stone-400); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.dash-recent { }
+.dash-section-title {
+  font-family: var(--font-display);
+  font-size: 0.8rem; letter-spacing: 0.12em;
+  color: var(--stone-400); text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.dash-section-title::after {
+  content:''; flex:1; height:1px;
+  background: linear-gradient(90deg, var(--stone-700), transparent);
+}
+.recent-list { display: flex; flex-direction: column; gap: 4px; }
+.recent-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: var(--stone-800);
+  border: 1px solid var(--stone-750);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.recent-item:hover { border-color: var(--stone-600); background: var(--stone-750); }
+.recent-type-badge {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 2px 6px; border-radius: 4px;
+  background: var(--stone-700); color: var(--stone-400);
+  flex-shrink: 0;
+}
+.recent-name { font-size: 0.9rem; color: var(--stone-200); }
+.recent-time { margin-left: auto; font-size: 0.75rem; color: var(--stone-500); }
+
+/* ── ENTITY LIST ────────────────────────────────────────── */
+#view-list { flex-direction: column; }
+.list-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--stone-700);
+  background: var(--stone-900);
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.list-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem; color: var(--silver-bright);
+  letter-spacing: 0.06em;
+}
+.list-actions { margin-left: auto; display: flex; gap: 8px; }
+.btn-primary {
+  background: var(--gold-dim);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 0.65rem; letter-spacing: 0.1em;
+  padding: 6px 14px; border-radius: var(--radius);
+  cursor: pointer; transition: var(--transition);
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--gold-glow); }
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--stone-600);
+  color: var(--stone-300);
+  font-family: var(--font-display);
+  font-size: 0.65rem; letter-spacing: 0.1em;
+  padding: 6px 14px; border-radius: var(--radius);
+  cursor: pointer; transition: var(--transition);
+}
+.btn-secondary:hover { border-color: var(--stone-400); color: var(--silver); }
+
+.list-filters {
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--stone-750);
+  background: var(--stone-875, #191924);
+  display: flex; gap: 8px; flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.filter-input {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-700);
+  color: var(--stone-200);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 5px 10px; border-radius: var(--radius);
+  flex: 1; min-width: 140px;
+}
+.filter-input:focus { outline: none; border-color: var(--accent); }
+
+.entity-grid {
+  flex: 1; overflow-y: auto;
+  padding: 16px 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.entity-card {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-700);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.entity-card::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+  opacity: 0;
+  transition: var(--transition);
+}
+.entity-card:hover { border-color: var(--stone-500); background: var(--stone-750); transform: translateY(-1px); }
+.entity-card:hover::before { opacity: 1; }
+.entity-card-name {
+  font-family: var(--font-display);
+  font-size: 0.9rem; color: var(--silver-bright);
+  margin-bottom: 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.entity-card-sub { font-size: 0.8rem; color: var(--stone-400); margin-bottom: 8px; }
+.entity-card-desc {
+  font-size: 0.82rem; color: var(--stone-300);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.entity-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.tag {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 3px;
+  background: var(--stone-700); color: var(--stone-400);
+}
+
+.empty-state {
+  grid-column: 1/-1;
+  text-align: center; padding: 60px 20px;
+  color: var(--stone-500);
+}
+.empty-state-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+.empty-state-title {
+  font-family: var(--font-display);
+  font-size: 1rem; color: var(--stone-400);
+  margin-bottom: 8px;
+}
+.empty-state p { font-size: 0.9rem; }
+
+/* ── ENTITY DETAIL ──────────────────────────────────────── */
+#view-detail { flex-direction: row; overflow: hidden; }
+.detail-main {
+  flex: 1; overflow-y: auto;
+  padding: 28px 32px;
+}
+.detail-sidebar {
+  width: 260px; flex-shrink: 0;
+  background: var(--stone-900);
+  border-left: 1px solid var(--stone-700);
+  overflow-y: auto;
+  padding: 20px 16px;
+}
+.detail-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--stone-500); font-size: 0.8rem;
+  cursor: pointer; margin-bottom: 20px;
+  transition: var(--transition);
+}
+.detail-back:hover { color: var(--stone-200); }
+.detail-type-label {
+  font-family: var(--font-display);
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 6px;
+}
+.detail-title {
+  font-family: var(--font-display);
+  font-size: 2rem; color: var(--silver-bright);
+  letter-spacing: 0.04em; line-height: 1.2;
+  margin-bottom: 8px;
+}
+.detail-actions { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.detail-divider {
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+  margin: 20px 0;
+  opacity: 0.4;
+}
+.detail-field { margin-bottom: 18px; }
+.detail-field-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--stone-500); margin-bottom: 4px;
+}
+.detail-field-value {
+  font-size: 0.95rem; color: var(--stone-200);
+  line-height: 1.7;
+}
+.detail-field-value .wiki-link {
+  color: var(--accent);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--accent-dim);
+  transition: var(--transition);
+}
+.detail-field-value .wiki-link:hover { color: var(--silver-bright); border-bottom-color: var(--silver); }
+.detail-field-value.empty { color: var(--stone-600); font-style: italic; }
+
+/* Connections panel */
+.connections-title {
+  font-family: var(--font-display);
+  font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--stone-500); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.connections-title::after { content:''; flex:1; height:1px; background: var(--stone-700); }
+.connection-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: var(--radius);
+  cursor: pointer; transition: var(--transition);
+  margin-bottom: 3px;
+}
+.connection-item:hover { background: var(--stone-800); }
+.connection-type {
+  font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 1px 5px; border-radius: 3px;
+  background: var(--stone-700); color: var(--stone-500);
+  flex-shrink: 0;
+}
+.connection-name { font-size: 0.85rem; color: var(--stone-300); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connection-relation { font-size: 0.75rem; color: var(--stone-500); font-style: italic; }
+.add-link-btn {
+  width: 100%;
+  background: none; border: 1px dashed var(--stone-700);
+  color: var(--stone-500); font-family: var(--font-body);
+  font-size: 0.8rem; padding: 6px; border-radius: var(--radius);
+  cursor: pointer; margin-top: 8px;
+  transition: var(--transition);
+}
+.add-link-btn:hover { border-color: var(--stone-500); color: var(--stone-300); }
+
+/* ── EDITOR ─────────────────────────────────────────────── */
+#view-editor { flex-direction: column; }
+.editor-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--stone-700);
+  background: var(--stone-900);
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.editor-title {
+  font-family: var(--font-display);
+  font-size: 1rem; color: var(--silver);
+  letter-spacing: 0.06em;
+}
+.editor-body {
+  flex: 1; overflow-y: auto;
+  padding: 24px 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-content: start;
+}
+.editor-field { display: flex; flex-direction: column; gap: 5px; }
+.editor-field.full { grid-column: 1/-1; }
+.editor-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--stone-400);
+}
+.editor-label .hint { font-family: var(--font-body); text-transform: none; letter-spacing: 0; font-style: italic; color: var(--stone-600); margin-left: 6px; }
+.editor-input, .editor-select, .editor-textarea {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-700);
+  color: var(--stone-100);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+.editor-input:focus, .editor-select:focus, .editor-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--stone-750);
+}
+.editor-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+}
+.editor-textarea.tall { min-height: 160px; }
+.editor-select { cursor: pointer; }
+.editor-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--stone-700);
+  background: var(--stone-900);
+  display: flex; gap: 8px; justify-content: flex-end;
+  flex-shrink: 0;
+}
+.btn-danger {
+  background: none; border: 1px solid var(--danger);
+  color: var(--danger); font-family: var(--font-display);
+  font-size: 0.65rem; letter-spacing: 0.1em;
+  padding: 6px 14px; border-radius: var(--radius);
+  cursor: pointer; transition: var(--transition);
+  margin-right: auto;
+}
+.btn-danger:hover { background: rgba(200,75,75,0.1); }
+
+/* ── MAP VIEW ───────────────────────────────────────────── */
+#view-map { flex-direction: column; }
+.map-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--stone-700);
+  background: var(--stone-900);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.map-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem; color: var(--silver);
+  letter-spacing: 0.08em;
+}
+.map-container {
+  flex: 1; overflow: hidden;
+  position: relative;
+  background: var(--stone-850);
+  cursor: crosshair;
+}
+.map-canvas-wrapper {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+#map-img {
+  position: absolute;
+  transform-origin: 0 0;
+  display: block;
+  max-width: none;
+}
+.map-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; color: var(--stone-500);
+}
+.map-placeholder-icon { font-size: 4rem; opacity: 0.3; }
+.map-placeholder p { font-size: 0.9rem; }
+.map-pin {
+  position: absolute;
+  width: 24px; height: 24px;
+  transform: translate(-50%, -100%);
+  cursor: pointer;
+  transition: transform var(--transition);
+  z-index: 10;
+}
+.map-pin:hover { transform: translate(-50%, -100%) scale(1.3); }
+.map-pin svg { width: 24px; height: 24px; }
+.map-pin-mode .map-pin { cursor: crosshair; }
+
+.map-tooltip {
+  position: absolute;
+  background: var(--stone-800);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  min-width: 200px; max-width: 280px;
+  z-index: 100;
+  pointer-events: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.map-tooltip::before {
+  content:''; position:absolute; bottom:-6px; left:16px;
+  width:12px; height:12px;
+  background: var(--stone-800);
+  border-right: 1px solid var(--gold-dim);
+  border-bottom: 1px solid var(--gold-dim);
+  transform: rotate(45deg);
+}
+.map-tooltip-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem; color: var(--gold);
+  margin-bottom: 4px;
+}
+.map-tooltip-type { font-size: 0.72rem; color: var(--stone-500); margin-bottom: 8px; }
+.map-tooltip-desc { font-size: 0.82rem; color: var(--stone-300); line-height: 1.5; }
+.map-tooltip-actions { display: flex; gap: 6px; margin-top: 10px; }
+.map-zoom-controls {
+  position: absolute; bottom: 16px; right: 16px;
+  display: flex; flex-direction: column; gap: 4px;
+  z-index: 50;
+}
+.zoom-btn {
+  width: 32px; height: 32px;
+  background: var(--stone-800);
+  border: 1px solid var(--stone-600);
+  color: var(--stone-300);
+  border-radius: var(--radius);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; transition: var(--transition);
+}
+.zoom-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+/* ── GRAPH VIEW ─────────────────────────────────────────── */
+#view-graph { flex-direction: column; }
+.graph-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--stone-700);
+  background: var(--stone-900);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+#graph-canvas {
+  flex: 1;
+  background: var(--stone-850);
+  cursor: grab;
+}
+#graph-canvas:active { cursor: grabbing; }
+
+/* ── TIMELINE VIEW ──────────────────────────────────────── */
+#view-timeline { flex-direction: column; padding: 24px 32px; overflow-y: auto; gap: 0; }
+.timeline-header-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px;
+}
+.timeline-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem; color: var(--silver-bright);
+}
+.timeline-list { position: relative; padding-left: 32px; }
+.timeline-list::before {
+  content:''; position:absolute; left:8px; top:0; bottom:0; width:2px;
+  background: linear-gradient(180deg, transparent, var(--gold-dim) 10%, var(--gold-dim) 90%, transparent);
+}
+.timeline-item {
+  position: relative; margin-bottom: 20px;
+}
+.timeline-item::before {
+  content:''; position:absolute;
+  left: -28px; top: 12px;
+  width: 10px; height: 10px;
+  background: var(--stone-800);
+  border: 2px solid var(--gold-dim);
+  border-radius: 50%;
+  transition: var(--transition);
+}
+.timeline-item:hover::before { background: var(--gold); border-color: var(--gold); }
+.timeline-card {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-700);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  cursor: pointer; transition: var(--transition);
+}
+.timeline-card:hover { border-color: var(--stone-500); }
+.timeline-date {
+  font-family: var(--font-display);
+  font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 4px;
+}
+.timeline-event-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem; color: var(--silver-bright);
+  margin-bottom: 6px;
+}
+.timeline-event-desc { font-size: 0.85rem; color: var(--stone-300); }
+
+/* ── SEARCH OVERLAY ─────────────────────────────────────── */
+#search-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  align-items: flex-start; justify-content: center;
+  padding-top: 80px;
+}
+#search-overlay.open { display: flex; }
+.search-modal {
+  background: var(--stone-850);
+  border: 1px solid var(--stone-600);
+  border-radius: var(--radius-lg);
+  width: 100%; max-width: 560px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+}
+.search-modal-input {
+  width: 100%;
+  background: none; border: none; outline: none;
+  color: var(--stone-100);
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--stone-700);
+}
+.search-modal-input::placeholder { color: var(--stone-500); }
+.search-results { max-height: 400px; overflow-y: auto; }
+.search-result-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; cursor: pointer;
+  transition: var(--transition);
+}
+.search-result-item:hover, .search-result-item.selected { background: var(--stone-800); }
+.search-result-type {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 2px 6px; border-radius: 3px;
+  background: var(--stone-700); color: var(--stone-500);
+  flex-shrink: 0; min-width: 64px; text-align: center;
+}
+.search-result-name { font-size: 0.9rem; color: var(--stone-200); }
+.search-empty { padding: 24px; text-align: center; color: var(--stone-500); font-size: 0.9rem; }
+.search-hint-bar {
+  padding: 8px 16px;
+  border-top: 1px solid var(--stone-750);
+  display: flex; gap: 16px;
+  font-size: 0.72rem; color: var(--stone-500);
+}
+.search-hint-bar kbd {
+  background: var(--stone-700);
+  padding: 1px 5px; border-radius: 3px;
+  font-family: monospace; font-size: 0.7rem;
+  color: var(--stone-300);
+}
+
+/* ── MODAL ──────────────────────────────────────────────── */
+#modal-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,0.8);
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+#modal-overlay.open { display: flex; }
+.modal {
+  background: var(--stone-850);
+  border: 1px solid var(--stone-600);
+  border-radius: var(--radius-lg);
+  width: 100%; max-width: 440px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--stone-700);
+  font-family: var(--font-display);
+  font-size: 0.9rem; color: var(--silver);
+  letter-spacing: 0.06em;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-close {
+  background: none; border: none; color: var(--stone-500);
+  cursor: pointer; font-size: 1.2rem; padding: 2px 6px;
+  border-radius: var(--radius); transition: var(--transition);
+}
+.modal-close:hover { color: var(--stone-200); background: var(--stone-800); }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--stone-750); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── TOAST ──────────────────────────────────────────────── */
+#toast-container {
+  position: fixed; bottom: 80px; right: 20px;
+  z-index: 3000;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-600);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 0.85rem; color: var(--stone-200);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  animation: toastIn 0.2s ease;
+  max-width: 280px;
+}
+.toast.success { border-color: var(--success); color: var(--success); }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+@keyframes toastIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
+
+/* ── LOADER ─────────────────────────────────────────────── */
+#loader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--stone-950);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+}
+.loader-logo {
+  font-family: var(--font-display);
+  font-size: 2rem; color: var(--gold);
+  letter-spacing: 0.15em;
+  animation: pulse 2s ease-in-out infinite;
+}
+.loader-bar {
+  width: 200px; height: 2px;
+  background: var(--stone-800);
+  border-radius: 1px; overflow: hidden;
+}
+.loader-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  animation: loadBar 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.7} 50%{opacity:1} }
+@keyframes loadBar { 0%{width:0;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0;margin-left:100%} }
+.loader-text { font-size: 0.75rem; color: var(--stone-500); letter-spacing: 0.1em; }
+
+/* ── SETTINGS PANEL ─────────────────────────────────────── */
+#settings-panel {
+  display: none;
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,0.7);
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+#settings-panel.open { display: flex; }
+.settings-modal {
+  background: var(--stone-850);
+  border: 1px solid var(--stone-600);
+  border-radius: var(--radius-lg);
+  width: 100%; max-width: 480px;
+  overflow: hidden;
+}
+.settings-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.settings-field { display: flex; flex-direction: column; gap: 6px; }
+.settings-label {
+  font-family: var(--font-display);
+  font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--stone-400);
+}
+.settings-hint { font-size: 0.8rem; color: var(--stone-500); }
+
+/* ── FAB (mobile) ───────────────────────────────────────── */
+#fab {
+  display: none;
+  position: fixed; bottom: 20px; right: 20px;
+  z-index: 500;
+  flex-direction: column-reverse; align-items: flex-end; gap: 10px;
+}
+.fab-main {
+  width: 52px; height: 52px;
+  background: var(--gold);
+  border: none; border-radius: 50%;
+  color: var(--stone-950);
+  font-size: 1.5rem; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(200,168,75,0.4);
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.fab-main:hover { transform: scale(1.08); }
+.fab-actions {
+  display: none;
+  flex-direction: column-reverse; gap: 8px; align-items: flex-end;
+}
+.fab-actions.open { display: flex; }
+.fab-action {
+  display: flex; align-items: center; gap: 10px;
+}
+.fab-action-label {
+  background: var(--stone-800);
+  border: 1px solid var(--stone-600);
+  color: var(--stone-200);
+  font-size: 0.8rem; padding: 5px 10px;
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+.fab-action-btn {
+  width: 40px; height: 40px;
+  background: var(--stone-800);
+  border: 1px solid var(--stone-600);
+  border-radius: 50%;
+  color: var(--stone-200);
+  font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.fab-action-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+/* ── MOBILE ─────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  :root { --sidebar-w: 100vw; --header-h: 48px; }
+
+  #sidebar {
+    position: fixed; left: 0; top: var(--header-h); bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 200;
+    width: 80vw;
+  }
+  #sidebar.mobile-open { transform: translateX(0); }
+  #sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    top: var(--header-h);
+    background: rgba(0,0,0,0.5);
+    z-index: 150;
+  }
+  #sidebar-overlay.visible { display: block; }
+
+  #btn-sidebar-toggle { display: flex !important; }
+  #search-bar { display: none !important; }
+
+  .detail-sidebar { display: none; }
+  #view-detail { flex-direction: column; }
+  .editor-body { grid-template-columns: 1fr; padding: 16px; }
+  .editor-field.full { grid-column: 1; }
+  .detail-main { padding: 20px 16px; }
+  #view-dashboard { padding: 16px; }
+  .dash-stats { grid-template-columns: repeat(3, 1fr); }
+  .entity-grid { grid-template-columns: 1fr; padding: 12px; }
+  #fab { display: flex; }
+
+  #view-timeline { padding: 16px; }
+}
+
+#btn-sidebar-toggle {
+  display: none;
+  background: none; border: none; color: var(--stone-300);
+  cursor: pointer; padding: 6px; border-radius: var(--radius);
+}
+
+/* ── UTIL ───────────────────────────────────────────────── */
+.hidden { display: none !important; }
+.spin { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.link-resolve-preview {
+  font-size: 0.75rem; color: var(--accent);
+  margin-top: 4px; font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">⚔ LOREKEEPER</div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+  <div class="loader-text">Opening the tome...</div>
+</div>
+
+<!-- SIDEBAR MOBILE OVERLAY -->
+<div id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <button id="btn-sidebar-toggle" onclick="toggleMobileSidebar()">☰</button>
+    <div class="topbar-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      LOREKEEPER
+    </div>
+    <select id="world-select" class="topbar-world-select" onchange="onWorldChange()">
+      <option value="">— Select World —</option>
+    </select>
+    <button id="btn-new-world" onclick="openNewWorldModal()">+ New World</button>
+    <div class="topbar-spacer"></div>
+    <div id="search-bar">
+      <span>🔍</span>
+      <input id="search-input" type="text" placeholder="Search... (Ctrl+K)" readonly onclick="openSearch()" />
+      <span class="search-hint">⌘K</span>
+    </div>
+    <button id="btn-settings" onclick="openSettings()" title="Settings">⚙</button>
+  </div>
+
+  <div id="body">
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Navigate</div>
+        <div class="sidebar-item active" data-view="dashboard" onclick="navTo('dashboard')">
+          <span class="icon">🏠</span> Dashboard
+        </div>
+        <div class="sidebar-item" data-view="map" onclick="navTo('map')">
+          <span class="icon">🗺</span> World Map
+        </div>
+        <div class="sidebar-item" data-view="timeline" onclick="navTo('timeline')">
+          <span class="icon">📅</span> Timeline
+        </div>
+        <div class="sidebar-item" data-view="graph" onclick="navTo('graph')">
+          <span class="icon">🕸</span> Connections
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Entries</div>
+        <div class="sidebar-item" data-type="Characters" onclick="navToList('Characters')">
+          <span class="icon">👤</span> Characters
+          <span class="sidebar-count" id="count-Characters">0</span>
+        </div>
+        <div class="sidebar-item" data-type="Locations" onclick="navToList('Locations')">
+          <span class="icon">📍</span> Locations
+          <span class="sidebar-count" id="count-Locations">0</span>
+        </div>
+        <div class="sidebar-item" data-type="Factions" onclick="navToList('Factions')">
+          <span class="icon">⚔</span> Factions
+          <span class="sidebar-count" id="count-Factions">0</span>
+        </div>
+        <div class="sidebar-item" data-type="Events" onclick="navToList('Events')">
+          <span class="icon">⚡</span> Events
+          <span class="sidebar-count" id="count-Events">0</span>
+        </div>
+        <div class="sidebar-item" data-type="Lore" onclick="navToList('Lore')">
+          <span class="icon">📖</span> Lore
+          <span class="sidebar-count" id="count-Lore">0</span>
+        </div>
+        <div class="sidebar-item" data-type="Items" onclick="navToList('Items')">
+          <span class="icon">💎</span> Items
+          <span class="sidebar-count" id="count-Items">0</span>
+        </div>
+        <div class="sidebar-item" data-type="Races" onclick="navToList('Races')">
+          <span class="icon">🧝</span> Races
+          <span class="sidebar-count" id="count-Races">0</span>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Custom</div>
+        <div id="custom-categories-list"></div>
+        <div class="sidebar-item" onclick="openAddCategoryModal()" style="color:var(--stone-500);font-size:0.82rem;">
+          <span class="icon">＋</span> Add Category
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN PANEL -->
+    <div id="main">
+
+      <!-- DASHBOARD -->
+      <div id="view-dashboard" class="view active">
+        <div class="dash-header">
+          <div class="dash-title" id="dash-world-name">Your World</div>
+          <div class="dash-subtitle">Welcome back, Worldbuilder</div>
+        </div>
+        <div class="dash-stats" id="dash-stats"></div>
+        <div class="dash-recent">
+          <div class="dash-section-title">Recent Entries</div>
+          <div class="recent-list" id="recent-list"></div>
+        </div>
+      </div>
+
+      <!-- ENTITY LIST -->
+      <div id="view-list" class="view">
+        <div class="list-header">
+          <div class="list-title" id="list-title">Characters</div>
+          <div class="list-actions">
+            <button class="btn-primary" id="btn-new-entity" onclick="openNewEditor()">+ New Entry</button>
+          </div>
+        </div>
+        <div class="list-filters">
+          <input class="filter-input" id="list-filter" placeholder="Filter by name or tag..." oninput="filterList()" />
+        </div>
+        <div class="entity-grid" id="entity-grid"></div>
+      </div>
+
+      <!-- ENTITY DETAIL -->
+      <div id="view-detail" class="view">
+        <div class="detail-main" id="detail-main">
+          <!-- populated by JS -->
+        </div>
+        <div class="detail-sidebar" id="detail-sidebar">
+          <!-- connections -->
+        </div>
+      </div>
+
+      <!-- EDITOR -->
+      <div id="view-editor" class="view">
+        <div class="editor-header">
+          <div class="editor-title" id="editor-title">New Entry</div>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn-secondary" onclick="cancelEditor()">Cancel</button>
+          </div>
+        </div>
+        <div class="editor-body" id="editor-body"></div>
+        <div class="editor-footer">
+          <button class="btn-danger hidden" id="btn-delete-entity" onclick="confirmDeleteEntity()">🗑 Delete</button>
+          <button class="btn-secondary" onclick="cancelEditor()">Cancel</button>
+          <button class="btn-primary" onclick="saveEntity()">Save Entry  Ctrl+S</button>
+        </div>
+      </div>
+
+      <!-- MAP -->
+      <div id="view-map" class="view">
+        <div class="map-header">
+          <span class="map-title">🗺 World Map</span>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn-secondary" id="btn-upload-map" onclick="triggerMapUpload()">📁 Upload Map</button>
+            <button class="btn-secondary" id="btn-pin-mode" onclick="togglePinMode()">📍 Place Pin</button>
+          </div>
+        </div>
+        <div class="map-container" id="map-container">
+          <div class="map-canvas-wrapper" id="map-wrapper">
+            <div class="map-placeholder" id="map-placeholder">
+              <div class="map-placeholder-icon">🗺</div>
+              <p>No map uploaded yet.</p>
+              <button class="btn-primary" onclick="triggerMapUpload()">Upload Map Image</button>
+            </div>
+          </div>
+          <div class="map-zoom-controls">
+            <button class="zoom-btn" onclick="zoomMap(1.2)">+</button>
+            <button class="zoom-btn" onclick="zoomMap(0.8)">−</button>
+            <button class="zoom-btn" onclick="resetMapZoom()" title="Reset">⌂</button>
+          </div>
+        </div>
+        <input type="file" id="map-file-input" accept="image/*" style="display:none" onchange="onMapFileSelected(event)" />
+      </div>
+
+      <!-- GRAPH -->
+      <div id="view-graph" class="view">
+        <div class="graph-header">
+          <span style="font-family:var(--font-display);font-size:0.9rem;color:var(--silver);letter-spacing:0.08em;">🕸 Connection Graph</span>
+          <span style="font-size:0.8rem;color:var(--stone-500);margin-left:8px;">Click a node to explore connections</span>
+        </div>
+        <canvas id="graph-canvas"></canvas>
+      </div>
+
+      <!-- TIMELINE -->
+      <div id="view-timeline" class="view">
+        <div class="timeline-header-row">
+          <div class="timeline-title">📅 Timeline</div>
+          <button class="btn-primary" onclick="openNewEditorForType('Events')" style="margin-left:auto">+ New Event</button>
+        </div>
+        <div class="timeline-list" id="timeline-list"></div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<!-- SEARCH OVERLAY -->
+<div id="search-overlay" onclick="onSearchOverlayClick(event)">
+  <div class="search-modal">
+    <input class="search-modal-input" id="search-modal-input" placeholder="Search worlds, characters, locations..." oninput="onSearchType()" onkeydown="onSearchKeydown(event)" />
+    <div class="search-results" id="search-results"></div>
+    <div class="search-hint-bar">
+      <span><kbd>↑↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="onModalOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modal-title">Modal</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings-panel" onclick="onSettingsOverlayClick(event)">
+  <div class="settings-modal">
+    <div class="modal-header">
+      <span>⚙ Settings</span>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-field">
+        <div class="settings-label">Apps Script URL</div>
+        <input class="editor-input" id="settings-api-url" placeholder="https://script.google.com/macros/s/..." />
+        <div class="settings-hint">Paste your deployed Apps Script Web App URL here</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- FAB (mobile) -->
+<div id="fab">
+  <button class="fab-main" onclick="toggleFab()" id="fab-btn">+</button>
+  <div class="fab-actions" id="fab-actions">
+    <div class="fab-action">
+      <span class="fab-action-label">Search</span>
+      <button class="fab-action-btn" onclick="openSearch();toggleFab()">🔍</button>
+    </div>
+    <div class="fab-action">
+      <span class="fab-action-label">New Entry</span>
+      <button class="fab-action-btn" onclick="openNewEditor();toggleFab()">✏</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  LOREKEEPER — Frontend JS
+// ════════════════════════════════════════════════════════════
+
+// ── CONFIG ───────────────────────────────────────────────────
+const CONFIG_KEY = 'lorekeeper_config';
+const LAST_VIEW_KEY = 'lorekeeper_last_view';
+const CACHE_KEY = 'lorekeeper_cache';
+
+let API_URL = localStorage.getItem('lorekeeper_api_url') || '';
+
+// ── STATE ────────────────────────────────────────────────────
+let state = {
+  worlds: [],
+  currentWorldId: localStorage.getItem('lorekeeper_world') || '',
+  entities: {},      // { type: [...] }
+  entityIndex: {},   // { id: entity }
+  links: [],
+  mapPins: [],
+  categories: [],
+  currentView: 'dashboard',
+  currentType: 'Characters',
+  currentEntity: null,
+  editingEntity: null,
+  searchResults: [],
+  searchSelected: 0,
+  mapZoom: 1,
+  mapOffset: {x:0, y:0},
+  mapPinMode: false,
+  pendingPinEntity: null,
+  graphData: null,
+  fabOpen: false,
+};
+
+const TYPES = ['Characters','Locations','Factions','Events','Lore','Items','Races'];
+const TYPE_META = {
+  Characters: { icon:'👤', color:'#7a8fc8', label:'Character' },
+  Locations:  { icon:'📍', color:'#8fc87a', label:'Location' },
+  Factions:   { icon:'⚔',  color:'#c8a84b', label:'Faction' },
+  Events:     { icon:'⚡', color:'#c87a4b', label:'Event' },
+  Lore:       { icon:'📖', color:'#a84bc8', label:'Lore' },
+  Items:      { icon:'💎', color:'#4bc8c8', label:'Item' },
+  Races:      { icon:'🧝', color:'#c84b7a', label:'Race' },
+};
+
+const FIELD_DEFS = {
+  Characters: [
+    {k:'name',        label:'Name',          type:'text',     req:true},
+    {k:'aliases',     label:'Aliases',       type:'text'},
+    {k:'race',        label:'Race',          type:'text'},
+    {k:'gender',      label:'Gender',        type:'text'},
+    {k:'age',         label:'Age',           type:'text'},
+    {k:'status',      label:'Status',        type:'select',   options:['Alive','Dead','Unknown','Missing']},
+    {k:'occupation',  label:'Occupation',    type:'text'},
+    {k:'birthPlace',  label:'Birth Place',   type:'text'},
+    {k:'faction',     label:'Faction',       type:'text'},
+    {k:'tags',        label:'Tags',          type:'text'},
+    {k:'description', label:'Description',   type:'textarea', hint:'use [[Name]] to link', wide:true},
+    {k:'appearance',  label:'Appearance',    type:'textarea', wide:true},
+    {k:'personality', label:'Personality',   type:'textarea', wide:true},
+    {k:'goals',       label:'Goals',         type:'textarea', wide:true},
+    {k:'secrets',     label:'Secrets',       type:'textarea', wide:true},
+    {k:'notes',       label:'Notes',         type:'textarea', wide:true},
+    {k:'imageUrl',    label:'Image URL',     type:'text',     wide:true},
+  ],
+  Locations: [
+    {k:'name',         label:'Name',          type:'text',     req:true},
+    {k:'aliases',      label:'Aliases',       type:'text'},
+    {k:'locationType', label:'Type',          type:'select',   options:['City','Town','Village','Dungeon','Wilderness','Castle','Ruin','Region','Realm','Other']},
+    {k:'parentLocation',label:'Parent Location', type:'text'},
+    {k:'climate',      label:'Climate',       type:'text'},
+    {k:'population',   label:'Population',    type:'text'},
+    {k:'government',   label:'Government',    type:'text'},
+    {k:'tags',         label:'Tags',          type:'text'},
+    {k:'description',  label:'Description',   type:'textarea', hint:'use [[Name]] to link', wide:true},
+    {k:'history',      label:'History',       type:'textarea', wide:true},
+    {k:'secrets',      label:'Secrets',       type:'textarea', wide:true},
+    {k:'notes',        label:'Notes',         type:'textarea', wide:true},
+    {k:'imageUrl',     label:'Image URL',     type:'text',     wide:true},
+  ],
+  Factions: [
+    {k:'name',        label:'Name',          type:'text',     req:true},
+    {k:'aliases',     label:'Aliases',       type:'text'},
+    {k:'factionType', label:'Type',          type:'select',   options:['Kingdom','Guild','Order','Cult','Band','Council','Tribe','Other']},
+    {k:'headquarters',label:'Headquarters',  type:'text'},
+    {k:'leader',      label:'Leader',        type:'text'},
+    {k:'founding',    label:'Founded',       type:'text'},
+    {k:'status',      label:'Status',        type:'select',   options:['Active','Dissolved','Hidden','Rising','Fallen']},
+    {k:'tags',        label:'Tags',          type:'text'},
+    {k:'goals',       label:'Goals',         type:'textarea', wide:true},
+    {k:'methods',     label:'Methods',       type:'textarea', wide:true},
+    {k:'description', label:'Description',   type:'textarea', hint:'use [[Name]] to link', wide:true},
+    {k:'secrets',     label:'Secrets',       type:'textarea', wide:true},
+    {k:'notes',       label:'Notes',         type:'textarea', wide:true},
+    {k:'imageUrl',    label:'Image URL',     type:'text',     wide:true},
+  ],
+  Events: [
+    {k:'name',        label:'Name',          type:'text',     req:true},
+    {k:'era',         label:'Era / Age',     type:'text'},
+    {k:'dateStart',   label:'Date Start',    type:'text'},
+    {k:'dateEnd',     label:'Date End',      type:'text'},
+    {k:'location',    label:'Location',      type:'text'},
+    {k:'causedBy',    label:'Caused By',     type:'text'},
+    {k:'tags',        label:'Tags',          type:'text'},
+    {k:'description', label:'Description',   type:'textarea', hint:'use [[Name]] to link', wide:true},
+    {k:'consequences',label:'Consequences',  type:'textarea', wide:true},
+    {k:'notes',       label:'Notes',         type:'textarea', wide:true},
+    {k:'imageUrl',    label:'Image URL',     type:'text',     wide:true},
+  ],
+  Lore: [
+    {k:'name',        label:'Name',          type:'text',     req:true},
+    {k:'loreType',    label:'Type',          type:'select',   options:['Magic System','Religion','Language','Prophecy','Myth','Custom']},
+    {k:'origin',      label:'Origin',        type:'text'},
+    {k:'practitioners',label:'Practitioners',type:'text'},
+    {k:'tags',        label:'Tags',          type:'text'},
+    {k:'description', label:'Description',   type:'textarea', hint:'use [[Name]] to link', wide:true},
+    {k:'rules',       label:'Rules / Laws',  type:'textarea', wide:true},
+    {k:'history',     label:'History',       type:'textarea', wide:true},
+    {k:'notes',       label:'Notes',         type:'textarea', wide:true},
+    {k:'imageUrl',    label:'Image URL',     type:'text',     wide:true},
+  ],
+  Items: [
+    {k:'name',        label:'Name',          type:'text',     req:true},
+    {k:'itemType',    label:'Type',          type:'select',   options:['Weapon','Armor','Artifact','Tome','Relic','Tool','Other']},
+    {k:'origin',      label:'Origin',        type:'text'},
+    {k:'currentHolder',label:'Current Holder',type:'text'},
+    {k:'powers',      label:'Powers',        type:'text'},
+    {k:'tags',        label:'Tags',          type:'text'},
+    {k:'description', label:'Description',   type:'textarea', hint:'use [[Name]] to link', wide:true},
+    {k:'history',     label:'History',       type:'textarea', wide:true},
+    {k:'notes',       label:'Notes',         type:'textarea', wide:true},
+    {k:'imageUrl',    label:'Image URL',     type:'text',     wide:true},
+  ],
+  Races: [
+    {k:'name',        label:'Name',          type:'text',     req:true},
+    {k:'aliases',     label:'Aliases',       type:'text'},
+    {k:'homeland',    label:'Homeland',      type:'text'},
+    {k:'lifespan',    label:'Lifespan',      type:'text'},
+    {k:'traits',      label:'Traits',        type:'text'},
+    {k:'culture',     label:'Culture',       type:'text'},
+    {k:'tags',        label:'Tags',          type:'text'},
+    {k:'description', label:'Description',   type:'textarea', hint:'use [[Name]] to link', wide:true},
+    {k:'history',     label:'History',       type:'textarea', wide:true},
+    {k:'notes',       label:'Notes',         type:'textarea', wide:true},
+    {k:'imageUrl',    label:'Image URL',     type:'text',     wide:true},
+  ],
+};
+
+// ── API ───────────────────────────────────────────────────────
+async function api(action, params={}) {
+  if (!API_URL) throw new Error('No API URL configured. Open Settings to add your Apps Script URL.');
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const r = await fetch(url.toString());
+  const data = await r.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+async function apiPost(body) {
+  if (!API_URL) throw new Error('No API URL configured. Open Settings to add your Apps Script URL.');
+  const r = await fetch(API_URL, {
+    method:'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+async function init() {
+  API_URL = localStorage.getItem('lorekeeper_api_url') || '';
+
+  if (!API_URL) {
+    hideLoader();
+    openSettings();
+    return;
+  }
+
+  try {
+    await api('init');
+    await loadWorlds();
+    const lastView = localStorage.getItem(LAST_VIEW_KEY);
+    if (state.currentWorldId) {
+      await loadAllData();
+      if (lastView && lastView !== 'editor') {
+        navTo(lastView, true);
+      }
+    }
+    hideLoader();
+  } catch(e) {
+    hideLoader();
+    toast('Could not connect to backend: ' + e.message, 'error');
+    openSettings();
+  }
+}
+
+function hideLoader() {
+  document.getElementById('loader').style.display = 'none';
+}
+
+async function loadWorlds() {
+  const res = await api('getWorlds');
+  state.worlds = res.data || [];
+  renderWorldSelect();
+}
+
+async function loadAllData() {
+  if (!state.currentWorldId) return;
+  const wid = state.currentWorldId;
+
+  const promises = TYPES.map(t =>
+    api('getEntities', {type:t, worldId:wid})
+      .then(r => { state.entities[t] = r.data || []; })
+  );
+  promises.push(
+    api('getLinks', {worldId:wid}).then(r => { state.links = r.data || []; }),
+    api('getMapPins', {worldId:wid}).then(r => { state.mapPins = r.data || []; }),
+    api('getCategories', {worldId:wid}).then(r => { state.categories = r.data || []; })
+  );
+
+  await Promise.all(promises);
+
+  // Build index
+  state.entityIndex = {};
+  TYPES.forEach(t => {
+    (state.entities[t] || []).forEach(e => { state.entityIndex[e.id] = e; });
+  });
+
+  updateCounts();
+  renderDashboard();
+  renderSidebarCategories();
+}
+
+// ── WORLD ─────────────────────────────────────────────────────
+function renderWorldSelect() {
+  const sel = document.getElementById('world-select');
+  sel.innerHTML = '<option value="">— Select World —</option>';
+  state.worlds.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.id;
+    opt.textContent = w.name;
+    if (w.id === state.currentWorldId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function onWorldChange() {
+  const sel = document.getElementById('world-select');
+  state.currentWorldId = sel.value;
+  localStorage.setItem('lorekeeper_world', state.currentWorldId);
+  loadAllData();
+  navTo('dashboard');
+}
+
+function openNewWorldModal() {
+  openModal('New World', `
+    <div class="editor-field full">
+      <div class="editor-label">World Name</div>
+      <input class="editor-input" id="new-world-name" placeholder="e.g. The Shattered Realm" />
+    </div>
+    <div class="editor-field full">
+      <div class="editor-label">Description</div>
+      <textarea class="editor-textarea" id="new-world-desc" placeholder="Brief description..."></textarea>
+    </div>
+  `, [
+    {label:'Create World', primary:true, onclick:'createWorld()'}
+  ]);
+  setTimeout(()=>document.getElementById('new-world-name').focus(),100);
+}
+
+async function createWorld() {
+  const name = document.getElementById('new-world-name').value.trim();
+  if (!name) { toast('Please enter a world name','error'); return; }
+  const desc = document.getElementById('new-world-desc').value;
+  const res = await apiPost({ action:'saveWorld', name, description:desc });
+  if (res.success) {
+    state.worlds.push(res.data);
+    state.currentWorldId = res.data.id;
+    localStorage.setItem('lorekeeper_world', state.currentWorldId);
+    renderWorldSelect();
+    closeModal();
+    await loadAllData();
+    toast('World "' + name + '" created!', 'success');
+  }
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function navTo(view, skipSave=false) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.view === view);
+  });
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.add('active');
+  state.currentView = view;
+  if (!skipSave) localStorage.setItem(LAST_VIEW_KEY, view);
+  closeMobileSidebar();
+
+  if (view === 'graph') renderGraph();
+  if (view === 'map') renderMapPins();
+  if (view === 'timeline') renderTimeline();
+}
+
+function navToList(type) {
+  state.currentType = type;
+  document.querySelectorAll('.sidebar-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.type === type);
+  });
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-list').classList.add('active');
+  state.currentView = 'list';
+  document.getElementById('list-title').textContent =
+    (TYPE_META[type]?.icon || '') + ' ' + type;
+  document.getElementById('list-filter').value = '';
+  renderEntityGrid(state.entities[type] || []);
+  localStorage.setItem(LAST_VIEW_KEY, 'list_' + type);
+  closeMobileSidebar();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+function renderDashboard() {
+  const world = state.worlds.find(w => w.id === state.currentWorldId);
+  if (world) {
+    document.getElementById('dash-world-name').textContent = world.name;
+  }
+
+  // Stats
+  const stats = document.getElementById('dash-stats');
+  stats.innerHTML = TYPES.map(t => {
+    const count = (state.entities[t] || []).length;
+    const m = TYPE_META[t];
+    return `<div class="stat-card" onclick="navToList('${t}')">
+      <div class="stat-icon">${m.icon}</div>
+      <div class="stat-num">${count}</div>
+      <div class="stat-label">${t}</div>
+    </div>`;
+  }).join('');
+
+  // Recent
+  const all = [];
+  TYPES.forEach(t => (state.entities[t]||[]).forEach(e => {
+    all.push({...e, _type:t});
+  }));
+  all.sort((a,b) => new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
+  const recent = all.slice(0,10);
+  const recentEl = document.getElementById('recent-list');
+  if (recent.length === 0) {
+    recentEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📜</div><div class="empty-state-title">The tome is empty</div><p>Create your first entry to begin.</p></div>';
+    return;
+  }
+  recentEl.innerHTML = recent.map(e => `
+    <div class="recent-item" onclick="openDetail('${e.id}','${e._type}')">
+      <span class="recent-type-badge">${TYPE_META[e._type]?.icon} ${e._type}</span>
+      <span class="recent-name">${esc(e.name)}</span>
+      <span class="recent-time">${timeAgo(e.updatedAt)}</span>
+    </div>`).join('');
+}
+
+function updateCounts() {
+  TYPES.forEach(t => {
+    const el = document.getElementById('count-' + t);
+    if (el) el.textContent = (state.entities[t] || []).length;
+  });
+}
+
+// ── ENTITY LIST ───────────────────────────────────────────────
+function renderEntityGrid(entities) {
+  const grid = document.getElementById('entity-grid');
+  if (!entities || entities.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">${TYPE_META[state.currentType]?.icon || '📜'}</div>
+      <div class="empty-state-title">No entries yet</div>
+      <p>Click "+ New Entry" to create your first ${state.currentType.slice(0,-1)}.</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = entities.map(e => {
+    const tags = (e.tags||'').split(',').filter(Boolean).slice(0,3);
+    const sub = e.race||e.locationType||e.factionType||e.loreType||e.itemType||e.era||e.homeland||'';
+    return `<div class="entity-card" onclick="openDetail('${e.id}','${state.currentType}')">
+      <div class="entity-card-name">${esc(e.name)}</div>
+      ${sub ? `<div class="entity-card-sub">${esc(sub)}</div>` : ''}
+      <div class="entity-card-desc">${esc(stripLinks(e.description||''))}</div>
+      ${tags.length ? `<div class="entity-card-tags">${tags.map(t=>`<span class="tag">${esc(t.trim())}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function filterList() {
+  const q = document.getElementById('list-filter').value.toLowerCase();
+  const list = state.entities[state.currentType] || [];
+  const filtered = q ? list.filter(e =>
+    (e.name||'').toLowerCase().includes(q) ||
+    (e.tags||'').toLowerCase().includes(q) ||
+    (e.description||'').toLowerCase().includes(q)
+  ) : list;
+  renderEntityGrid(filtered);
+}
+
+// ── ENTITY DETAIL ─────────────────────────────────────────────
+function openDetail(id, type) {
+  const entity = (state.entities[type]||[]).find(e=>e.id===id) ||
+                  Object.values(state.entityIndex).find(e=>e.id===id);
+  if (!entity) { toast('Entry not found','error'); return; }
+
+  // Detect type if not provided
+  if (!type || !FIELD_DEFS[type]) {
+    type = TYPES.find(t => (state.entities[t]||[]).some(e=>e.id===id));
+  }
+
+  state.currentEntity = { ...entity, _type: type };
+  navTo('detail');
+  renderDetail(entity, type);
+}
+
+function renderDetail(entity, type) {
+  const fields = FIELD_DEFS[type] || [];
+  const meta = TYPE_META[type] || {};
+
+  // Main content
+  const main = document.getElementById('detail-main');
+  const rows = fields.filter(f => entity[f.k] && f.k !== 'name' && f.k !== 'imageUrl').map(f => {
+    const val = renderFieldValue(entity[f.k] || '');
+    return `<div class="detail-field">
+      <div class="detail-field-label">${f.label}</div>
+      <div class="detail-field-value">${val || '<span class="empty">—</span>'}</div>
+    </div>`;
+  }).join('');
+
+  main.innerHTML = `
+    <div class="detail-back" onclick="history.back()">← Back</div>
+    <div class="detail-type-label">${meta.icon || ''} ${type.slice(0,-1)}</div>
+    <div class="detail-title">${esc(entity.name)}</div>
+    <div class="detail-actions">
+      <button class="btn-primary" onclick="openEditorFor('${entity.id}','${type}')">✏ Edit</button>
+      ${type==='Locations' ? `<button class="btn-secondary" onclick="pinOnMap('${entity.id}')">📍 Pin on Map</button>` : ''}
+    </div>
+    ${entity.imageUrl ? `<img src="${esc(entity.imageUrl)}" style="max-width:100%;max-height:240px;object-fit:cover;border-radius:var(--radius-lg);margin-bottom:20px;border:1px solid var(--stone-700);" />` : ''}
+    <div class="detail-divider"></div>
+    ${rows}
+  `;
+
+  // Sidebar connections
+  const sidebar = document.getElementById('detail-sidebar');
+  const linked = state.links.filter(l => l.sourceId===entity.id || l.targetId===entity.id);
+
+  const connItems = linked.map(l => {
+    const isSource = l.sourceId === entity.id;
+    const otherId = isSource ? l.targetId : l.sourceId;
+    const otherType = isSource ? l.targetType : l.sourceType;
+    const other = state.entityIndex[otherId] || { name: otherId };
+    return `<div class="connection-item" onclick="openDetail('${otherId}','${otherType}')">
+      <span class="connection-type">${TYPE_META[otherType]?.icon||''} ${otherType||''}</span>
+      <span class="connection-name">${esc(other.name||otherId)}</span>
+      <span class="connection-relation">${esc(l.relation||'')}</span>
+    </div>`;
+  }).join('');
+
+  sidebar.innerHTML = `
+    <div class="connections-title">Connections <span style="color:var(--stone-600)">(${linked.length})</span></div>
+    ${connItems || '<div style="color:var(--stone-600);font-size:0.8rem;font-style:italic;">No connections yet.<br>Use [[Name]] in text fields to link entries.</div>'}
+    <button class="add-link-btn" onclick="openAddLinkModal('${entity.id}','${type}')">+ Add Manual Link</button>
+  `;
+}
+
+function renderFieldValue(text) {
+  if (!text) return '';
+  // Render [[links]] as clickable spans
+  return esc(text).replace(/\[\[([^\]]+)\]\]/g, (match, name) => {
+    const found = Object.values(state.entityIndex).find(e =>
+      e.name && e.name.toLowerCase() === name.toLowerCase()
+    );
+    if (found) {
+      const type = TYPES.find(t => (state.entities[t]||[]).some(e=>e.id===found.id));
+      return `<span class="wiki-link" onclick="openDetail('${found.id}','${type||''}')">${name}</span>`;
+    }
+    return `<span class="wiki-link" style="opacity:0.5;cursor:default" title="Not found">${name}</span>`;
+  }).replace(/\n/g, '<br>');
+}
+
+// ── EDITOR ────────────────────────────────────────────────────
+function openNewEditor() {
+  if (!state.currentWorldId) { toast('Select or create a world first','error'); return; }
+  openEditorForType(state.currentType || 'Characters');
+}
+function openNewEditorForType(type) {
+  state.currentType = type;
+  openEditorForType(type);
+}
+function openEditorForType(type) {
+  state.editingEntity = { _type: type, worldId: state.currentWorldId };
+  renderEditor(state.editingEntity, type);
+  navTo('editor');
+  document.getElementById('btn-delete-entity').classList.add('hidden');
+}
+function openEditorFor(id, type) {
+  const entity = (state.entities[type]||[]).find(e=>e.id===id);
+  if (!entity) { toast('Not found','error'); return; }
+  state.editingEntity = {...entity, _type: type};
+  renderEditor(state.editingEntity, type);
+  navTo('editor');
+  document.getElementById('btn-delete-entity').classList.remove('hidden');
+}
+
+function renderEditor(entity, type) {
+  const fields = FIELD_DEFS[type] || [];
+  document.getElementById('editor-title').textContent =
+    (entity.id ? 'Edit' : 'New') + ' ' + (TYPE_META[type]?.label || type.slice(0,-1));
+
+  document.getElementById('editor-body').innerHTML = `
+    <div class="editor-field">
+      <div class="editor-label">Type</div>
+      <select class="editor-select" id="ef-_type" onchange="changeEditorType(this.value)">
+        ${TYPES.map(t=>`<option value="${t}" ${t===type?'selected':''}>${TYPE_META[t]?.icon} ${t}</option>`).join('')}
+      </select>
+    </div>
+    ${fields.map(f => `
+      <div class="editor-field ${f.wide?'full':''}">
+        <div class="editor-label">${f.label}${f.hint?`<span class="hint">${f.hint}</span>`:''}${f.req?'<span style="color:var(--danger)"> *</span>':''}</div>
+        ${renderEditorInput(f, entity[f.k]||'')}
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderEditorInput(f, val) {
+  if (f.type === 'textarea') {
+    return `<textarea class="editor-textarea${f.k==='description'?' tall':''}" id="ef-${f.k}" placeholder="${f.hint||''}">${esc(val)}</textarea>`;
+  }
+  if (f.type === 'select') {
+    return `<select class="editor-select" id="ef-${f.k}">
+      <option value="">— Select —</option>
+      ${f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}
+    </select>`;
+  }
+  return `<input class="editor-input" id="ef-${f.k}" type="text" value="${esc(val)}" />`;
+}
+
+function changeEditorType(newType) {
+  const current = collectEditorValues();
+  state.editingEntity = {...current, _type: newType, worldId: state.currentWorldId};
+  renderEditor(state.editingEntity, newType);
+}
+
+function collectEditorValues() {
+  const type = document.getElementById('ef-_type')?.value || state.editingEntity?._type;
+  const fields = FIELD_DEFS[type] || [];
+  const result = { ...state.editingEntity, _type: type };
+  fields.forEach(f => {
+    const el = document.getElementById('ef-' + f.k);
+    if (el) result[f.k] = el.value;
+  });
+  return result;
+}
+
+async function saveEntity() {
+  const data = collectEditorValues();
+  if (!data.name || !data.name.trim()) { toast('Name is required','error'); return; }
+
+  const type = data._type;
+  delete data._type;
+  data.action = 'saveEntity';
+  data.type = type;
+  data.worldId = state.currentWorldId;
+
+  try {
+    const res = await apiPost(data);
+    if (res.success) {
+      // Update local state
+      if (!state.entities[type]) state.entities[type] = [];
+      const idx = state.entities[type].findIndex(e=>e.id===res.data.id);
+      if (idx>=0) state.entities[type][idx] = res.data;
+      else state.entities[type].push(res.data);
+      state.entityIndex[res.data.id] = res.data;
+
+      // Reload links
+      const linksRes = await api('getLinks', {worldId: state.currentWorldId});
+      state.links = linksRes.data || [];
+
+      updateCounts();
+      toast('Saved!', 'success');
+      openDetail(res.data.id, type);
+    }
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+}
+
+function cancelEditor() {
+  if (state.currentEntity) {
+    openDetail(state.currentEntity.id, state.currentEntity._type);
+  } else {
+    navToList(state.currentType);
+  }
+}
+
+function confirmDeleteEntity() {
+  openModal('Confirm Delete', `
+    <p>Delete <strong>${esc(state.editingEntity?.name||'this entry')}</strong>? This cannot be undone.</p>
+  `, [
+    {label:'Cancel', onclick:'closeModal()'},
+    {label:'Delete', primary:false, danger:true, onclick:'deleteEntity()'}
+  ]);
+}
+
+async function deleteEntity() {
+  const e = state.editingEntity;
+  if (!e || !e.id) return;
+  const type = e._type || e.type;
+  try {
+    await api('deleteEntity', {id: e.id, type});
+    state.entities[type] = (state.entities[type]||[]).filter(x=>x.id!==e.id);
+    delete state.entityIndex[e.id];
+    updateCounts();
+    closeModal();
+    toast('Deleted','success');
+    navToList(type);
+  } catch(err) {
+    toast('Delete failed: '+err.message,'error');
+  }
+}
+
+// ── MAP ───────────────────────────────────────────────────────
+let mapDrag = false, mapDragStart = {x:0,y:0}, mapOffsetStart = {x:0,y:0};
+let activeTooltip = null;
+
+function triggerMapUpload() {
+  document.getElementById('map-file-input').click();
+}
+
+async function onMapFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    localStorage.setItem('lorekeeper_map_' + state.currentWorldId, dataUrl);
+    renderMapImage(dataUrl);
+    // Also try to save URL to sheet (will be large, so we skip for base64)
+    toast('Map uploaded and saved locally!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderMapImage(src) {
+  const wrapper = document.getElementById('map-wrapper');
+  document.getElementById('map-placeholder').style.display = 'none';
+  let img = document.getElementById('map-img');
+  if (!img) {
+    img = document.createElement('img');
+    img.id = 'map-img';
+    wrapper.appendChild(img);
+    setupMapDrag(wrapper, img);
+  }
+  img.src = src;
+  img.onload = () => {
+    state.mapZoom = 1;
+    state.mapOffset = {x:0,y:0};
+    applyMapTransform(img);
+    renderMapPins();
+  };
+}
+
+function setupMapDrag(wrapper, img) {
+  wrapper.addEventListener('mousedown', e => {
+    if (state.mapPinMode) return;
+    mapDrag = true;
+    mapDragStart = {x:e.clientX, y:e.clientY};
+    mapOffsetStart = {...state.mapOffset};
+  });
+  window.addEventListener('mousemove', e => {
+    if (!mapDrag) return;
+    state.mapOffset.x = mapOffsetStart.x + (e.clientX - mapDragStart.x);
+    state.mapOffset.y = mapOffsetStart.y + (e.clientY - mapDragStart.y);
+    applyMapTransform(img);
+  });
+  window.addEventListener('mouseup', () => { mapDrag = false; });
+
+  // Touch drag
+  wrapper.addEventListener('touchstart', e => {
+    if (state.mapPinMode) return;
+    const t = e.touches[0];
+    mapDrag = true;
+    mapDragStart = {x:t.clientX, y:t.clientY};
+    mapOffsetStart = {...state.mapOffset};
+  }, {passive:true});
+  wrapper.addEventListener('touchmove', e => {
+    if (!mapDrag) return;
+    const t = e.touches[0];
+    state.mapOffset.x = mapOffsetStart.x + (t.clientX - mapDragStart.x);
+    state.mapOffset.y = mapOffsetStart.y + (t.clientY - mapDragStart.y);
+    applyMapTransform(img);
+  }, {passive:true});
+  wrapper.addEventListener('touchend', () => { mapDrag = false; });
+
+  // Click for pin placement
+  wrapper.addEventListener('click', e => {
+    if (!state.mapPinMode) return;
+    const rect = wrapper.getBoundingClientRect();
+    const x = ((e.clientX - rect.left - state.mapOffset.x) / state.mapZoom);
+    const y = ((e.clientY - rect.top  - state.mapOffset.y) / state.mapZoom);
+    placePinAt(x, y);
+  });
+}
+
+function applyMapTransform(img) {
+  if (!img) img = document.getElementById('map-img');
+  if (img) img.style.transform = `translate(${state.mapOffset.x}px, ${state.mapOffset.y}px) scale(${state.mapZoom})`;
+}
+
+function zoomMap(factor) {
+  state.mapZoom = Math.min(8, Math.max(0.1, state.mapZoom * factor));
+  applyMapTransform();
+}
+function resetMapZoom() {
+  state.mapZoom = 1; state.mapOffset = {x:0, y:0}; applyMapTransform();
+}
+
+function renderMapPins() {
+  // Remove old pins
+  document.querySelectorAll('.map-pin').forEach(p=>p.remove());
+  if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
+
+  const wrapper = document.getElementById('map-wrapper');
+  state.mapPins.forEach(pin => {
+    if (!pin.mapX || !pin.mapY) return;
+    const pinEl = document.createElement('div');
+    pinEl.className = 'map-pin';
+    pinEl.innerHTML = `<svg viewBox="0 0 24 24" fill="#c8a84b" stroke="#8a7030" stroke-width="1">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>`;
+
+    const px = pin.mapX * state.mapZoom + state.mapOffset.x;
+    const py = pin.mapY * state.mapZoom + state.mapOffset.y;
+    pinEl.style.left = px + 'px';
+    pinEl.style.top  = py + 'px';
+
+    pinEl.addEventListener('click', e => {
+      e.stopPropagation();
+      showPinTooltip(pin, px, py);
+    });
+    wrapper.appendChild(pinEl);
+  });
+}
+
+function showPinTooltip(pin, px, py) {
+  if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
+  const tooltip = document.createElement('div');
+  tooltip.className = 'map-tooltip';
+  tooltip.style.left = (px + 16) + 'px';
+  tooltip.style.top  = (py - 60) + 'px';
+  const desc = (pin.description||'').slice(0,120) + ((pin.description||'').length>120?'…':'');
+  tooltip.innerHTML = `
+    <div class="map-tooltip-name">${esc(pin.name)}</div>
+    <div class="map-tooltip-type">${esc(pin.locationType||'Location')}</div>
+    <div class="map-tooltip-desc">${esc(desc)}</div>
+    <div class="map-tooltip-actions">
+      <button class="btn-primary" onclick="openDetail('${pin.id}','Locations')" style="font-size:0.6rem;padding:4px 10px">Open</button>
+      <button class="btn-secondary" onclick="removeTooltip()" style="font-size:0.6rem;padding:4px 10px">Close</button>
+    </div>
+  `;
+  document.getElementById('map-wrapper').appendChild(tooltip);
+  activeTooltip = tooltip;
+}
+
+function removeTooltip() {
+  if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
+}
+
+function togglePinMode() {
+  state.mapPinMode = !state.mapPinMode;
+  const btn = document.getElementById('btn-pin-mode');
+  if (state.mapPinMode) {
+    btn.style.borderColor = 'var(--gold)';
+    btn.style.color = 'var(--gold)';
+    document.getElementById('map-container').style.cursor = 'crosshair';
+    // Pick which location to pin
+    const locs = (state.entities['Locations']||[]).filter(l => !l.mapX);
+    if (locs.length === 0) {
+      toast('No unpinned locations. Create a Location first.', 'error');
+      state.mapPinMode = false;
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      return;
+    }
+    openModal('Place a Pin', `
+      <p style="color:var(--stone-400);font-size:0.85rem;margin-bottom:12px;">Select a location to pin, then click on the map.</p>
+      <select class="editor-select" id="pin-loc-select" style="width:100%">
+        ${locs.map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}
+      </select>
+    `, [
+      {label:'Cancel', onclick:'cancelPinMode()'},
+      {label:'Ready — Click Map', primary:true, onclick:'confirmPinReady()'}
+    ]);
+  } else {
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    document.getElementById('map-container').style.cursor = '';
+    state.pendingPinEntity = null;
+  }
+}
+
+function pinOnMap(locId) {
+  navTo('map');
+  setTimeout(() => {
+    state.mapPinMode = true;
+    state.pendingPinEntity = locId;
+    const btn = document.getElementById('btn-pin-mode');
+    if (btn) { btn.style.borderColor='var(--gold)'; btn.style.color='var(--gold)'; }
+    document.getElementById('map-container').style.cursor = 'crosshair';
+    toast('Click on the map to place the pin', 'success');
+  }, 300);
+}
+
+function confirmPinReady() {
+  const sel = document.getElementById('pin-loc-select');
+  if (sel) state.pendingPinEntity = sel.value;
+  closeModal();
+  toast('Click on the map to place the pin', 'success');
+}
+
+function cancelPinMode() {
+  state.mapPinMode = false;
+  state.pendingPinEntity = null;
+  const btn = document.getElementById('btn-pin-mode');
+  if (btn) { btn.style.borderColor=''; btn.style.color=''; }
+  closeModal();
+}
+
+async function placePinAt(x, y) {
+  const locId = state.pendingPinEntity;
+  if (!locId) { toast('No location selected','error'); return; }
+  state.mapPinMode = false;
+  state.pendingPinEntity = null;
+  const btn = document.getElementById('btn-pin-mode');
+  if (btn) { btn.style.borderColor=''; btn.style.color=''; }
+  document.getElementById('map-container').style.cursor = '';
+
+  try {
+    await apiPost({ action:'saveMapPin', id:locId, mapX:x, mapY:y });
+    // Update local state
+    const loc = (state.entities['Locations']||[]).find(l=>l.id===locId);
+    if (loc) { loc.mapX = x; loc.mapY = y; }
+    // Refresh pins
+    const res = await api('getMapPins', {worldId: state.currentWorldId});
+    state.mapPins = res.data || [];
+    renderMapPins();
+    toast('Pin placed!', 'success');
+  } catch(e) {
+    toast('Failed to save pin: '+e.message,'error');
+  }
+}
+
+// Load locally saved map on view
+document.getElementById('view-map').addEventListener('transitionend', () => {});
+function loadLocalMap() {
+  if (!state.currentWorldId) return;
+  const stored = localStorage.getItem('lorekeeper_map_' + state.currentWorldId);
+  if (stored) renderMapImage(stored);
+}
+
+// ── GRAPH ─────────────────────────────────────────────────────
+function renderGraph() {
+  const canvas = document.getElementById('graph-canvas');
+  const ctx = canvas.getContext('2d');
+  const parent = canvas.parentElement;
+  canvas.width = parent.clientWidth;
+  canvas.height = parent.clientHeight;
+
+  // Build node/link data from local state
+  const nodes = [];
+  const links = [];
+
+  TYPES.forEach(t => {
+    (state.entities[t]||[]).forEach(e => {
+      nodes.push({
+        id: e.id, label: e.name, type: t,
+        x: Math.random() * (canvas.width - 100) + 50,
+        y: Math.random() * (canvas.height - 100) + 50,
+        vx:0, vy:0
+      });
+    });
+  });
+
+  state.links.forEach(l => {
+    if (nodes.find(n=>n.id===l.sourceId) && nodes.find(n=>n.id===l.targetId)) {
+      links.push({source:l.sourceId, target:l.targetId, label:l.relation});
+    }
+  });
+
+  if (nodes.length === 0) {
+    ctx.fillStyle = '#5a5a7a';
+    ctx.font = '16px Crimson Pro, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No entries yet — create some entries and link them with [[Name]]', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  // Simple force-directed sim
+  let selected = null;
+  let dragging = null;
+  let dragOffset = {x:0,y:0};
+  let animId;
+
+  function simulate() {
+    for (let i=0;i<nodes.length;i++) {
+      const a = nodes[i];
+      // Repulsion
+      for (let j=i+1;j<nodes.length;j++) {
+        const b = nodes[j];
+        let dx = b.x-a.x, dy = b.y-a.y;
+        let dist = Math.sqrt(dx*dx+dy*dy)||1;
+        let force = 3000/(dist*dist);
+        a.vx -= dx/dist*force; a.vy -= dy/dist*force;
+        b.vx += dx/dist*force; b.vy += dy/dist*force;
+      }
+      // Center gravity
+      a.vx += (canvas.width/2 - a.x) * 0.001;
+      a.vy += (canvas.height/2 - a.y) * 0.001;
+    }
+    // Attraction on links
+    links.forEach(l => {
+      const s = nodes.find(n=>n.id===l.source);
+      const t = nodes.find(n=>n.id===l.target);
+      if (!s||!t) return;
+      let dx=t.x-s.x, dy=t.y-s.y;
+      let dist=Math.sqrt(dx*dx+dy*dy)||1;
+      let force=(dist-120)*0.03;
+      s.vx+=dx/dist*force; s.vy+=dy/dist*force;
+      t.vx-=dx/dist*force; t.vy-=dy/dist*force;
+    });
+    nodes.forEach(n => {
+      if (n===dragging) return;
+      n.x+=n.vx*0.4; n.y+=n.vy*0.4;
+      n.vx*=0.8; n.vy*=0.8;
+      n.x=Math.max(40,Math.min(canvas.width-40,n.x));
+      n.y=Math.max(30,Math.min(canvas.height-30,n.y));
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Links
+    links.forEach(l => {
+      const s=nodes.find(n=>n.id===l.source), t=nodes.find(n=>n.id===l.target);
+      if(!s||!t) return;
+      ctx.beginPath();
+      ctx.moveTo(s.x,s.y); ctx.lineTo(t.x,t.y);
+      ctx.strokeStyle='rgba(90,90,122,0.5)';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+    });
+    // Nodes
+    nodes.forEach(n => {
+      const meta = TYPE_META[n.type]||{};
+      const isSelected = n===selected;
+      ctx.beginPath();
+      ctx.arc(n.x,n.y, isSelected?18:14,0,Math.PI*2);
+      ctx.fillStyle = isSelected ? '#c8a84b' : (meta.color||'#5a5a7a');
+      ctx.fill();
+      ctx.strokeStyle = isSelected ? '#e0c870' : 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = isSelected?2:1;
+      ctx.stroke();
+      // Label
+      ctx.fillStyle = isSelected ? '#fff' : '#ccccde';
+      ctx.font = (isSelected?'bold ':'')+'11px Crimson Pro, serif';
+      ctx.textAlign='center';
+      ctx.fillText(n.label.length>16?n.label.slice(0,14)+'…':n.label, n.x, n.y+28);
+    });
+  }
+
+  function loop() {
+    simulate(); draw();
+    animId = requestAnimationFrame(loop);
+  }
+  loop();
+
+  // Interaction
+  function getNode(ex,ey) {
+    const rect=canvas.getBoundingClientRect();
+    const mx=ex-rect.left, my=ey-rect.top;
+    return nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<20)||null;
+  }
+
+  canvas.onmousedown = e => {
+    const n=getNode(e.clientX,e.clientY);
+    if(n){dragging=n;dragOffset={x:0,y:0};}
+  };
+  canvas.onmousemove = e => {
+    if(!dragging)return;
+    const rect=canvas.getBoundingClientRect();
+    dragging.x=e.clientX-rect.left;
+    dragging.y=e.clientY-rect.top;
+  };
+  canvas.onmouseup = e => {
+    if(!dragging)return;
+    const n=getNode(e.clientX,e.clientY);
+    if(n===dragging){
+      selected=selected===n?null:n;
+      if(selected) openDetail(selected.id, selected.type);
+    }
+    dragging=null;
+  };
+
+  // Cleanup on nav away
+  const observer = new MutationObserver(() => {
+    if(!document.getElementById('view-graph').classList.contains('active')) {
+      cancelAnimationFrame(animId);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.getElementById('view-graph'),{attributes:true,attributeFilter:['class']});
+}
+
+// ── TIMELINE ──────────────────────────────────────────────────
+function renderTimeline() {
+  const events = (state.entities['Events']||[]).slice().sort((a,b) => {
+    const da = a.dateStart||a.era||'', db = b.dateStart||b.era||'';
+    return da.localeCompare(db);
+  });
+  const list = document.getElementById('timeline-list');
+  if (events.length===0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-title">No events yet</div><p>Click "+ New Event" to chronicle history.</p></div>';
+    return;
+  }
+  list.innerHTML = events.map(e => `
+    <div class="timeline-item">
+      <div class="timeline-card" onclick="openDetail('${e.id}','Events')">
+        <div class="timeline-date">${esc(e.era||'')} ${esc(e.dateStart||'')}${e.dateEnd&&e.dateEnd!==e.dateStart?' – '+esc(e.dateEnd):''}</div>
+        <div class="timeline-event-name">${esc(e.name)}</div>
+        <div class="timeline-event-desc">${esc(stripLinks((e.description||'').slice(0,140)))}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── SEARCH ────────────────────────────────────────────────────
+function openSearch() {
+  document.getElementById('search-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('search-modal-input').focus(), 50);
+}
+function closeSearch() {
+  document.getElementById('search-overlay').classList.remove('open');
+  document.getElementById('search-modal-input').value = '';
+  document.getElementById('search-results').innerHTML = '';
+}
+function onSearchOverlayClick(e) {
+  if (e.target.id==='search-overlay') closeSearch();
+}
+function onSearchType() {
+  const q = document.getElementById('search-modal-input').value.trim().toLowerCase();
+  if (!q) { document.getElementById('search-results').innerHTML=''; return; }
+  const all = [];
+  TYPES.forEach(t => {
+    (state.entities[t]||[]).forEach(e => {
+      if ((e.name||'').toLowerCase().includes(q) ||
+          (e.tags||'').toLowerCase().includes(q) ||
+          (e.description||'').toLowerCase().includes(q)) {
+        all.push({...e, _type:t});
+      }
+    });
+  });
+  state.searchResults = all.slice(0,20);
+  state.searchSelected = 0;
+  renderSearchResults();
+}
+function renderSearchResults() {
+  const el = document.getElementById('search-results');
+  if (!state.searchResults.length) {
+    el.innerHTML = '<div class="search-empty">No results found</div>';
+    return;
+  }
+  el.innerHTML = state.searchResults.map((e,i) => `
+    <div class="search-result-item ${i===state.searchSelected?'selected':''}"
+         onclick="selectSearchResult(${i})">
+      <span class="search-result-type">${TYPE_META[e._type]?.icon} ${e._type}</span>
+      <span class="search-result-name">${esc(e.name)}</span>
+    </div>`).join('');
+}
+function selectSearchResult(i) {
+  const e = state.searchResults[i];
+  if (!e) return;
+  closeSearch();
+  openDetail(e.id, e._type);
+}
+function onSearchKeydown(ev) {
+  if (ev.key==='Escape') { closeSearch(); return; }
+  if (ev.key==='ArrowDown') { state.searchSelected=Math.min(state.searchSelected+1,state.searchResults.length-1); renderSearchResults(); }
+  if (ev.key==='ArrowUp') { state.searchSelected=Math.max(state.searchSelected-1,0); renderSearchResults(); }
+  if (ev.key==='Enter' && state.searchResults.length) { selectSearchResult(state.searchSelected); }
+}
+
+// ── LINKS ─────────────────────────────────────────────────────
+function openAddLinkModal(sourceId, sourceType) {
+  const allNames = [];
+  TYPES.forEach(t => (state.entities[t]||[]).forEach(e => {
+    if (e.id!==sourceId) allNames.push({id:e.id, name:e.name, type:t});
+  }));
+
+  openModal('Add Manual Link', `
+    <div class="editor-field">
+      <div class="editor-label">Link To</div>
+      <select class="editor-select" id="link-target-id" style="width:100%">
+        ${allNames.map(e=>`<option value="${e.id}|${e.type}">${TYPE_META[e.type]?.icon} [${e.type}] ${e.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="editor-field">
+      <div class="editor-label">Relationship Label</div>
+      <input class="editor-input" id="link-relation" placeholder="e.g. member of, born in, wielded by..." style="width:100%" />
+    </div>
+  `, [
+    {label:'Cancel', onclick:'closeModal()'},
+    {label:'Add Link', primary:true, onclick:`addManualLink('${sourceId}','${sourceType}')`}
+  ]);
+}
+async function addManualLink(sourceId, sourceType) {
+  const sel = document.getElementById('link-target-id').value;
+  const relation = document.getElementById('link-relation').value.trim() || 'related to';
+  const [targetId, targetType] = sel.split('|');
+  try {
+    const res = await apiPost({
+      action:'saveLink',
+      worldId: state.currentWorldId,
+      sourceId, sourceType,
+      targetId, targetType,
+      relation
+    });
+    if (res.success) {
+      state.links.push(res.data);
+      closeModal();
+      openDetail(sourceId, sourceType);
+      toast('Link added!','success');
+    }
+  } catch(e) {
+    toast('Failed: '+e.message,'error');
+  }
+}
+
+// ── CATEGORIES ────────────────────────────────────────────────
+function renderSidebarCategories() {
+  const el = document.getElementById('custom-categories-list');
+  el.innerHTML = (state.categories||[]).map(c => `
+    <div class="sidebar-item" onclick="navToList('cat_${c.id}')">
+      <span class="icon">${c.icon||'📁'}</span> ${esc(c.name)}
+    </div>`).join('');
+}
+function openAddCategoryModal() {
+  openModal('New Category', `
+    <div class="editor-field">
+      <div class="editor-label">Name</div>
+      <input class="editor-input" id="cat-name" placeholder="e.g. Ships, Spells, Beasts" style="width:100%" />
+    </div>
+    <div class="editor-field">
+      <div class="editor-label">Icon (emoji)</div>
+      <input class="editor-input" id="cat-icon" placeholder="🐉" style="width:100%" maxlength="4" />
+    </div>
+  `, [
+    {label:'Cancel', onclick:'closeModal()'},
+    {label:'Create', primary:true, onclick:'createCategory()'}
+  ]);
+}
+async function createCategory() {
+  const name = document.getElementById('cat-name').value.trim();
+  const icon = document.getElementById('cat-icon').value.trim() || '📁';
+  if (!name) { toast('Name required','error'); return; }
+  const res = await apiPost({action:'saveCategory', worldId:state.currentWorldId, name, icon});
+  if (res.success) {
+    state.categories.push(res.data);
+    renderSidebarCategories();
+    closeModal();
+    toast('Category created!','success');
+  }
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openModal(title, bodyHtml, buttons=[]) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-footer').innerHTML = buttons.map(b =>
+    `<button class="${b.danger?'btn-danger':b.primary?'btn-primary':'btn-secondary'}" onclick="${b.onclick}">${b.label}</button>`
+  ).join('');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function onModalOverlayClick(e) {
+  if (e.target.id==='modal-overlay') closeModal();
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settings-api-url').value = API_URL || '';
+  document.getElementById('settings-panel').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-panel').classList.remove('open');
+}
+function onSettingsOverlayClick(e) {
+  if (e.target.id==='settings-panel') closeSettings();
+}
+async function saveSettings() {
+  const url = document.getElementById('settings-api-url').value.trim();
+  API_URL = url;
+  localStorage.setItem('lorekeeper_api_url', url);
+  closeSettings();
+  toast('Settings saved! Connecting...','success');
+  await init();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// ── MOBILE ────────────────────────────────────────────────────
+function toggleMobileSidebar() {
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebar-overlay').classList.toggle('visible');
+}
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('visible');
+}
+function toggleFab() {
+  state.fabOpen = !state.fabOpen;
+  document.getElementById('fab-actions').classList.toggle('open', state.fabOpen);
+  document.getElementById('fab-btn').textContent = state.fabOpen ? '✕' : '+';
+}
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key==='k') { e.preventDefault(); openSearch(); }
+  if (ctrl && e.key==='s') {
+    e.preventDefault();
+    if (state.currentView==='editor') saveEntity();
+  }
+  if (ctrl && e.key==='n') {
+    e.preventDefault();
+    openNewEditor();
+  }
+  if (e.key==='Escape') {
+    closeSearch(); closeModal(); closeSettings();
+  }
+});
+
+// ── HELPERS ───────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+function stripLinks(s) {
+  return (s||'').replace(/\[\[([^\]]+)\]\]/g,'$1');
+}
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso), now = new Date();
+  const diff = (now-d)/1000;
+  if (diff<60) return 'just now';
+  if (diff<3600) return Math.floor(diff/60)+'m ago';
+  if (diff<86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+function history_back_shim() {
+  if (state.currentEntity) {
+    navToList(state.currentEntity._type);
+  } else {
+    navTo('dashboard');
+  }
+}
+// override back button behavior for detail view
+document.querySelectorAll('.detail-back').forEach(el => {
+  el.addEventListener('click', history_back_shim);
+});
+
+// ── BOOT ──────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  init();
+  // Load map if on map view
+  setTimeout(loadLocalMap, 500);
+});
+
+// Reload map when navigating to map view
+document.querySelector('[data-view="map"]').addEventListener('click', () => {
+  setTimeout(loadLocalMap, 200);
+});
+</script>
+</body>
+</html>
