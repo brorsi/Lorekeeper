@@ -425,7 +425,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--b0);color:var(
 // ══════════════════════════════════════════════════════
 // LOREKEEPER — All API calls use GET only. No POST = no CORS.
 // ══════════════════════════════════════════════════════
-const AKEY='lk_api', WKEY='lk_wid', VKEY='lk_view';
+const AKEY='lk_api', WKEY='lk_wid', VKEY='lk_view', WNKEY='lk_wname';
 
 const S={
   api:'',worlds:[],wid:'',
@@ -479,9 +479,28 @@ async function boot(){
   try{
     await api({action:'init'});
     S.worlds=await api({action:'getWorlds'})||[];
-    if(!S.worlds.length||!S.wid||!S.worlds.find(w=>w.id===S.wid)){showSetup(true);return;}
+    // If saved world not yet in list, re-add it locally so it isn't lost
+    if(S.wid&&!S.worlds.find(w=>w.id===S.wid)){
+      const wname=localStorage.getItem(WNKEY)||S.wid;
+      S.worlds.push({id:S.wid,name:wname,description:''});
+    }
+    if(!S.wid||!S.worlds.length){showSetup(true);return;}
     await enterWorld(S.wid,false);
-  }catch(e){showSetup(false);toast('Could not connect — re-enter your URL','err');}
+  }catch(e){
+    // API failed but we know which world — try to enter it anyway
+    if(S.wid){
+      const wname=localStorage.getItem(WNKEY)||S.wid;
+      document.getElementById('wsn').textContent=wname;
+      toast('Connection slow — loading world…','');
+      try{await loadAll();}catch(e2){}
+      const lv=localStorage.getItem(VKEY);
+      if(lv&&lv.startsWith('list_'))goList(lv.slice(5),true);
+      else if(lv&&!['edit','det'].includes(lv))goView(lv,true);
+      else goView('dash',true);
+    } else {
+      showSetup(false);toast('Could not connect — re-enter your URL','err');
+    }
+  }
 }
 
 // ── SETUP ─────────────────────────────────────────────
@@ -510,8 +529,9 @@ function renderSetupWorlds(){
 async function pickWorld(id){hideSetup();await enterWorld(id,true);}
 
 async function enterWorld(id,save){
-  S.wid=id; if(save)localStorage.setItem(WKEY,id);
+  S.wid=id; if(save){localStorage.setItem(WKEY,id);}
   const w=S.worlds.find(x=>x.id===id);
+  if(w&&w.name)localStorage.setItem(WNKEY,w.name);
   document.getElementById('wsn').textContent=w?w.name:id;
   await loadAll();
   const lv=localStorage.getItem(VKEY);
