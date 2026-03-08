@@ -464,7 +464,10 @@ const FD={
 async function api(p){
   const u=new URL(S.api);
   Object.entries(p).forEach(([k,v])=>{ if(v!=null) u.searchParams.set(k,String(v)); });
-  const r=await fetch(u.toString());
+  // mode:'no-cors' causes opaque responses; we need cors + follow redirects.
+  // Google Apps Script /exec handles CORS natively when deployed as "Anyone".
+  const r=await fetch(u.toString(),{method:'GET',redirect:'follow',credentials:'omit'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
   const d=await r.json();
   if(!d.success&&d.error) throw new Error(d.error);
   return d.data;
@@ -477,47 +480,50 @@ function hideLdr(){document.getElementById('ldr').style.display='none';}
 async function boot(){
   S.api=localStorage.getItem(AKEY)||'';
   S.wid=localStorage.getItem(WKEY)||'';
-  // Keep loader visible — hide only when we know what to show
-  if(!S.api){hideLdr();showSetup(false);return;}
-  // If we have a known world, show its name immediately in the loader
   const savedName=localStorage.getItem(WNKEY);
-  if(S.wid&&savedName){
-    setLdrTxt('Entering '+savedName+'…');
-    document.getElementById('wsn').textContent=savedName;
-  } else {
-    setLdrTxt('Connecting…');
+
+  // No API url at all — first time ever
+  if(!S.api){hideLdr();showSetup(false);return;}
+
+  // We have API but no saved world — just need to pick one
+  if(!S.wid){
+    setLdrTxt('Loading worlds…');
+    try{
+      await api({action:'init'});
+      S.worlds=await api({action:'getWorlds'})||[];
+    }catch(e){console.error('Boot error:',e);}
+    hideLdr();showSetup(true);return;
   }
+
+  // We have both API and a saved world — go straight in
+  setLdrTxt('Entering '+(savedName||'your world')+'…');
+  document.getElementById('wsn').textContent=savedName||'Loading…';
   try{
     await api({action:'init'});
     setLdrTxt('Loading worlds…');
     S.worlds=await api({action:'getWorlds'})||[];
-    // If saved world not yet in list, re-add it locally so it isn't lost
-    if(S.wid&&!S.worlds.find(w=>w.id===S.wid)){
+    if(!S.worlds.find(w=>w.id===S.wid)){
       S.worlds.push({id:S.wid,name:savedName||S.wid,description:''});
     }
-    if(!S.wid||!S.worlds.length){hideLdr();showSetup(true);return;}
     setLdrTxt('Opening your world…');
     await enterWorld(S.wid,false);
     hideLdr();
   }catch(e){
-    // API failed — if we know the world, try loading it directly
-    if(S.wid){
-      setLdrTxt('Connecting to Google Sheet…');
-      if(savedName)S.worlds=[{id:S.wid,name:savedName,description:''}];
-      try{
-        await loadAll();
-        hideLdr();
-        const lv=localStorage.getItem(VKEY);
-        if(lv&&lv.startsWith('list_'))goList(lv.slice(5),true);
-        else if(lv&&!['edit','det'].includes(lv))goView(lv,true);
-        else goView('dash',true);
-      }catch(e2){
-        hideLdr();
-        showSetup(true);
-        toast('Could not load world — please select it again','err');
-      }
-    } else {
-      hideLdr();showSetup(false);toast('Could not connect — re-enter your URL','err');
+    console.error('Boot error:',e);
+    // API had an error — try loadAll directly with what we know
+    if(savedName)S.worlds=[{id:S.wid,name:savedName,description:''}];
+    try{
+      setLdrTxt('Connecting…');
+      await loadAll();
+      hideLdr();
+      const lv=localStorage.getItem(VKEY);
+      if(lv&&lv.startsWith('list_'))goList(lv.slice(5),true);
+      else if(lv&&!['edit','det'].includes(lv))goView(lv,true);
+      else goView('dash',true);
+    }catch(e2){
+      console.error('loadAll error:',e2);
+      hideLdr();showSetup(true);
+      toast('Connection problem — please select your world','err');
     }
   }
 }
