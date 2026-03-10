@@ -1018,17 +1018,40 @@ function onMOC(e){if(e.target===document.getElementById('mov'))closeModal();}
 
 // ── LINKS ─────────────────────────────────────────────
 function addLinkM(sid,stype){
-  const others=[];TYPES.forEach(t=>(S.ents[t]||[]).forEach(e=>{if(e.id!==sid)others.push({id:e.id,name:e.name,type:t});}));
-  document.getElementById('mtit').textContent='Add Manual Link';
+  // Collect IDs already linked to this entry
+  const alreadyLinked=new Set(S.links.filter(l=>l.sourceId===sid||l.targetId===sid).map(l=>l.sourceId===sid?l.targetId:l.sourceId));
+  // Build list of linkable entries, excluding self and already-linked
+  const others=[];TYPES.forEach(t=>(S.ents[t]||[]).forEach(e=>{if(e.id!==sid&&!alreadyLinked.has(e.id))others.push({id:e.id,name:e.name,type:t});}));
+  document.getElementById('mtit').textContent='Add Connection';
+  if(!others.length){
+    document.getElementById('momb').innerHTML=`<div style="color:var(--t4);font-size:.85rem;padding:6px 0;">All entries are already connected to this one.</div>`;
+    const f=document.getElementById('momf');f.innerHTML='';
+    const btn=document.createElement('button');btn.className='bs';btn.textContent='Close';btn.type='button';btn.addEventListener('click',closeModal);f.appendChild(btn);
+    document.getElementById('mov').classList.add('on');
+    return;
+  }
   document.getElementById('momb').innerHTML=`
-    <div class="ef"><div class="el">Link To</div><select class="esel" id="lt" style="width:100%">${others.map(e=>`<option value="${e.id}|${e.type}">${TM[e.type]?.i} [${e.type}] ${esc(e.name)}</option>`).join('')}</select></div>
+    <div class="ef"><div class="el">Link To <span class="hint">(hold Ctrl/Cmd for multiple)</span></div>
+      <select class="esel" id="lt" style="width:100%;min-height:120px" multiple size="6">
+        ${others.map(e=>`<option value="${e.id}|${e.type}">${TM[e.type]?.i} [${e.type}] ${esc(e.name)}</option>`).join('')}
+      </select>
+    </div>
     <div class="ef" style="margin-top:8px"><div class="el">Relationship</div><input class="ei" id="lr" placeholder="e.g. member of, born in..." style="width:100%"/></div>`;
   const f=document.getElementById('momf');f.innerHTML='';
   [{l:'Cancel',fn:closeModal},{l:'Add Link',p:true,fn:async()=>{
-    const[tid,tt]=(document.getElementById('lt').value||'|').split('|');
+    const sel=[...document.getElementById('lt').selectedOptions];
+    if(!sel.length){toast('Select at least one entry','err');return;}
     const rel=document.getElementById('lr').value.trim()||'related to';
-    try{const lnk=await api({action:'saveLink',worldId:S.wid,sourceId:sid,sourceType:stype,targetId:tid,targetType:tt,relation:rel});S.links.push(lnk);closeModal();openDet(sid,stype);toast('Link added!','ok');}
-    catch(e){toast('Failed: '+e.message,'err');}
+    const btn=f.querySelector('.bp');if(btn){btn.disabled=true;btn.textContent='Saving...';}
+    try{
+      for(const opt of sel){
+        const[tid,tt]=(opt.value||'|').split('|');
+        if(!tid)continue;
+        const lnk=await api({action:'saveLink',worldId:S.wid,sourceId:sid,sourceType:stype,targetId:tid,targetType:tt,relation:rel});
+        S.links.push(lnk);
+      }
+      closeModal();openDet(sid,stype);toast(sel.length>1?`${sel.length} links added!`:'Link added!','ok');
+    }catch(e){toast('Failed: '+e.message,'err');if(btn){btn.disabled=false;btn.textContent='Add Link';}}
   }}].forEach(b=>{const btn=document.createElement('button');btn.className=b.p?'bp':'bs';btn.textContent=b.l;btn.type='button';btn.addEventListener('click',b.fn);f.appendChild(btn);});
   document.getElementById('mov').classList.add('on');
 }
