@@ -583,12 +583,49 @@ const FD={
   Races:[{k:'name',l:'Name',t:'i',req:1},{k:'aliases',l:'Aliases',t:'i'},{k:'homeland',l:'Homeland',t:'i'},{k:'lifespan',l:'Lifespan',t:'i'},{k:'traits',l:'Traits',t:'i'},{k:'culture',l:'Culture',t:'i'},{k:'tags',l:'Tags',t:'i'},{k:'description',l:'Description',t:'ta',h:'[[Name]] to link',w:1},{k:'history',l:'History',t:'ta',w:1},{k:'notes',l:'Notes',t:'ta',w:1},{k:'imageUrl',l:'Image URL',t:'i',w:1}],
 };
 
-// ── API: GET only, no CORS ─────────────────────────────
+// ── API: GET for simple calls, GET with chunked content for large payloads ──
+// Google Apps Script only supports GET for CORS-safe responses.
+// For large text (novel/entity descriptions) we split content out and send
+// it as a base64-encoded param to stay within URL limits (~7500 chars safe).
+const API_SAFE_LEN = 6000; // leave headroom for other params
+
 async function api(p){
+  const action = p.action || '';
+  // For actions that may carry large text, encode content fields safely
+  const largeActions = ['saveDoc','saveEntity'];
+  if(largeActions.includes(action)){
+    return apiLarge(p);
+  }
   const u=new URL(S.api);
   Object.entries(p).forEach(([k,v])=>{ if(v!=null) u.searchParams.set(k,String(v)); });
-  // mode:'no-cors' causes opaque responses; we need cors + follow redirects.
-  // Google Apps Script /exec handles CORS natively when deployed as "Anyone".
+  const r=await fetch(u.toString(),{method:'GET',redirect:'follow',credentials:'omit'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  if(!d.success&&d.error) throw new Error(d.error);
+  return d.data;
+}
+
+// For large payloads: base64-encode large fields, send _encoded=1 flag so
+// the Apps Script backend knows to decode them.
+async function apiLarge(p){
+  const u=new URL(S.api);
+  const encoded={};
+  Object.entries(p).forEach(([k,v])=>{
+    if(v==null) return;
+    const s=String(v);
+    // Encode fields that may be large
+    if(['content','description','history','notes','appearance','personality',
+        'goals','secrets','consequences','rules','powers','imageUrl'].includes(k) && s.length>200){
+      encoded[k]=btoa(unescape(encodeURIComponent(s)));
+    } else {
+      u.searchParams.set(k,s);
+    }
+  });
+  if(Object.keys(encoded).length){
+    u.searchParams.set('_encoded','1');
+    // Send encoded fields as a single JSON blob to avoid per-field URL length issues
+    u.searchParams.set('_data', btoa(unescape(encodeURIComponent(JSON.stringify(encoded)))));
+  }
   const r=await fetch(u.toString(),{method:'GET',redirect:'follow',credentials:'omit'});
   if(!r.ok) throw new Error('HTTP '+r.status);
   const d=await r.json();
@@ -678,6 +715,11 @@ async function pickWorld(id){hideSetup();await enterWorld(id,true);}
 
 async function enterWorld(id,save){
   S.wid=id; if(save){localStorage.setItem(WKEY,id);}
+  // Reset cached docs so they reload fresh for this world
+  S.wrDoc=null; S.npDoc=null;
+  // Also clear the textarea content so stale text isn't shown
+  const wta=document.getElementById('wr-text');if(wta)wta.value='';
+  const nta=document.getElementById('np-text');if(nta)nta.value='';
   const w=S.worlds.find(x=>x.id===id);
   if(w&&w.name)localStorage.setItem(WNKEY,w.name);
   document.getElementById('wsn').textContent=w?w.name:id;
