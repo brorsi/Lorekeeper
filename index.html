@@ -59,8 +59,11 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--b0);color:var(
 .sdiv{height:1px;background:linear-gradient(90deg,transparent,var(--b5),transparent);margin:6px 16px}
 
 /* MAIN */
-#main{flex:1;overflow-y:auto;background:var(--b2);position:relative;min-width:0}
-.view{display:none}.view.on{display:flex;flex-direction:column;min-height:100%}
+#main{flex:1;overflow:hidden;background:var(--b2);position:relative;min-width:0;display:flex;flex-direction:column}
+.view{display:none}.view.on{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0}
+/* Views that need internal scroll */
+#vdash,#vtl{overflow-y:auto!important}
+#vlist{overflow:hidden!important;display:none}#vlist.on{display:flex!important}
 
 /* SETUP */
 #setup{display:none;position:fixed;inset:0;background:var(--b0);z-index:900;align-items:center;justify-content:center;padding:var(--st) var(--sr) var(--sb) var(--sl);overflow-y:auto}
@@ -319,7 +322,35 @@ body.focus-mode #vwriter > div:last-child > div:first-child{background:var(--b0)
 #focus-exit{display:none;position:fixed;top:12px;right:12px;z-index:8000;background:var(--b3);border:1px solid var(--b6);color:var(--t3);padding:5px 12px;border-radius:var(--r);font-size:.75rem;cursor:pointer;font-family:var(--fb)}
 body.focus-mode #focus-exit{display:block}
 
-/* DRAG AND DROP PANELS */
+/* WRITER iPhone HUD */
+#wr-iphone-hud{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--b1);
+  border-top:1px solid var(--b5);
+  padding:10px 16px calc(10px + var(--sb)) 16px;
+  z-index:400;
+  align-items:center;
+  gap:12px;
+  flex-shrink:0;
+}
+#wr-iphone-hud .hud-wc{
+  font-family:var(--fd);font-size:.82rem;color:var(--gd);white-space:nowrap;
+}
+#wr-iphone-hud .hud-status{
+  font-size:.72rem;color:var(--t4);flex:1;text-align:center;
+}
+#wr-iphone-hud .hud-prog{
+  width:80px;height:3px;background:var(--b5);border-radius:2px;overflow:hidden;flex-shrink:0;
+}
+#wr-iphone-hud .hud-progf{
+  height:100%;background:linear-gradient(90deg,var(--gdd),var(--gd));border-radius:2px;transition:.4s;width:0%;
+}
+@media(max-width:680px){
+  #wr-iphone-hud{display:flex}
+  /* Push textarea up so HUD doesn't overlap content */
+  body:has(#vwriter.on) #wr-text{padding-bottom:calc(60px + var(--sb))!important}
+}
 .drag-handle{cursor:grab;color:var(--t4);font-size:.9rem;padding:0 6px;user-select:none;flex-shrink:0}
 .drag-handle:hover{color:var(--t2)}
 .drag-handle:active{cursor:grabbing}
@@ -535,6 +566,14 @@ body.focus-mode #focus-exit{display:block}
     <div class="fabrow"><span class="fablbl">New Entry</span><button class="fabbtn" onclick="newEnt();toggleFab()">✏</button></div>
     <div class="fabrow"><span class="fablbl">Switch World</span><button class="fabbtn" onclick="showPicker();toggleFab()">🌍</button></div>
   </div>
+</div>
+
+<div id="wr-iphone-hud">
+  <div class="hud-wc">✍ <span id="hud-wc-val">0</span> words</div>
+  <div class="hud-prog"><div class="hud-progf" id="hud-progf"></div></div>
+  <div class="hud-status" id="hud-status"></div>
+  <button class="bs" style="font-size:.7rem;padding:5px 10px;flex-shrink:0" onclick="exportNovel()">⬇</button>
+  <button class="bs" style="font-size:.7rem;padding:5px 10px;flex-shrink:0" onclick="toggleFocusMode()">⛶</button>
 </div>
 
 <script>
@@ -1297,28 +1336,34 @@ function updWrStats(){
   const wc=countWords(text);
   const goal=parseInt(document.getElementById('wr-goal-inp').value)||0;
   document.getElementById('wr-wc').textContent=wc.toLocaleString();
+  // iPhone HUD word count
+  const hudWc=document.getElementById('hud-wc-val');
+  if(hudWc)hudWc.textContent=wc.toLocaleString();
   const pw=document.getElementById('wr-prog-wrap');
   const pb=document.getElementById('wr-prog');
   const gt=document.getElementById('wr-goal-txt');
+  const hudPf=document.getElementById('hud-progf');
   if(goal>0){
     const pct=Math.min(100,Math.round(wc/goal*100));
     pw.style.display='block';
     pb.style.width=pct+'%';
     pb.style.background=pct>=100?'linear-gradient(90deg,var(--ok),var(--ok))':'linear-gradient(90deg,var(--gdd),var(--gd))';
     gt.textContent=pct+'% of '+goal.toLocaleString()+' words'+(pct>=100?' ✓':'');
-    // Save goal to localStorage for quick restore
+    if(hudPf){hudPf.style.width=pct+'%';hudPf.style.background=pct>=100?'var(--ok)':'';}
     localStorage.setItem('lk_wrgoal_'+S.wid,goal);
   } else {
     pw.style.display='none';
     gt.textContent='';
+    if(hudPf)hudPf.style.width='0%';
   }
 }
 
 function onWrInput(){
   updWrStats();
   document.getElementById('wr-save-status').textContent='Unsaved…';
+  const hs=document.getElementById('hud-status');if(hs)hs.textContent='Unsaved…';
   clearTimeout(S.wrSaveTimer);
-  S.wrSaveTimer=setTimeout(saveWriter,3000); // autosave after 3s idle
+  S.wrSaveTimer=setTimeout(saveWriter,3000);
 }
 
 async function saveWriter(){
@@ -1326,11 +1371,14 @@ async function saveWriter(){
   const wordGoal=document.getElementById('wr-goal-inp').value||'0';
   try{
     document.getElementById('wr-save-status').textContent='Saving…';
+    const hs=document.getElementById('hud-status');if(hs)hs.textContent='Saving…';
     S.wrDoc=await api({action:'saveDoc',worldId:S.wid,type:'novel',content,wordGoal});
     document.getElementById('wr-save-status').textContent='Saved ✓';
-    setTimeout(()=>{const el=document.getElementById('wr-save-status');if(el)el.textContent='';},2500);
+    if(hs)hs.textContent='Saved ✓';
+    setTimeout(()=>{const el=document.getElementById('wr-save-status');if(el)el.textContent='';const h=document.getElementById('hud-status');if(h)h.textContent='';},2500);
   }catch(e){
     document.getElementById('wr-save-status').textContent='Save failed';
+    const hs=document.getElementById('hud-status');if(hs)hs.textContent='Save failed';
     toast('Save failed: '+e.message,'err');
   }
 }
