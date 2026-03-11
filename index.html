@@ -319,14 +319,21 @@ html,body{height:100%;min-height:-webkit-fill-available;width:100%;overflow:hidd
 .wr-ref-card:hover .wr-ref-del,.wr-ref-card:active .wr-ref-del{opacity:1}
 /* Writer topbar */
 #wr-topbar{padding:8px 16px;border-bottom:1px solid var(--b5);background:var(--b1);display:flex;align-items:center;gap:8px;flex-shrink:0}
-/* Writer word count badge top-right */
-#wr-wc-badge{font-family:var(--fd);font-size:.78rem;color:var(--gd);background:var(--b3);border:1px solid var(--b5);border-radius:10px;padding:2px 10px;white-space:nowrap;flex-shrink:0}
+/* Writer word count badge top-right — visibility controlled by in-writer body class */
 /* Focus button anchored bottom-right */
 #wr-focus-anchor{position:absolute;bottom:20px;right:20px;z-index:100}
 @media(max-width:680px){
   #wr-text{padding:20px 5% 100px}
   #wr-focus-anchor{bottom:calc(60px + var(--sb) + 10px)}
   #wr-refs-drawer{width:85vw}
+}
+
+/* Word count badge — only show in writer view */
+#wr-wc-badge{font-family:var(--fd);font-size:.78rem;color:var(--gd);background:var(--b3);border:1px solid var(--b5);border-radius:10px;padding:2px 10px;white-space:nowrap;flex-shrink:0;display:none}
+body.in-writer #wr-wc-badge{display:flex!important}
+#wr-iphone-hud{display:none!important}
+@media(max-width:680px){
+  body.in-writer #wr-iphone-hud{display:flex!important}
 }
 
 /* FOCUS MODE */
@@ -620,7 +627,8 @@ const S={
   wrRefs:[],     // [{id,src}] reference images, localStorage per world
   focusMode:false,
   wrSaveTimer:null,
-  npSaveTimer:null
+  npSaveTimer:null,
+  wrUnsaved:false
 };
 
 const TYPES=['Characters','Locations','Factions','Events','Lore','Items','Races'];
@@ -844,11 +852,18 @@ async function loadAll(){
 
 // ── NAV ───────────────────────────────────────────────
 function goView(v,skip=false){
+  // Writer unsaved-change guard
+  if(S.view==='writer'&&v!=='writer'&&S.wrUnsaved){
+    if(!confirm('You have unsaved changes in the Novel Writer. Leave anyway?'))return;
+    S.wrUnsaved=false;
+  }
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.si[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   document.querySelectorAll('.si[data-t]').forEach(x=>x.classList.remove('on'));
   const id=VIDS[v];if(id)document.getElementById(id).classList.add('on');
   S.view=v;if(!skip)localStorage.setItem(VKEY,v);closeSB();
+  // Toggle writer-specific UI
+  document.body.classList.toggle('in-writer',v==='writer');
   if(v==='graph')renderGraph();
   if(v==='map'){renderPins();loadMap();}
   if(v==='tl')renderTL();
@@ -857,12 +872,18 @@ function goView(v,skip=false){
   if(v==='notepad')openNotepad();
 }
 function goList(t,skip=false){
+  // Writer unsaved-change guard
+  if(S.view==='writer'&&S.wrUnsaved){
+    if(!confirm('You have unsaved changes in the Novel Writer. Leave anyway?'))return;
+    S.wrUnsaved=false;
+  }
   S.type=t;
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.si[data-v]').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.si[data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
   document.getElementById('vlist').classList.add('on');
   S.view='list';
+  document.body.classList.remove('in-writer');
   document.getElementById('ltit').textContent=(TM[t]?.i||'')+' '+t;
   document.getElementById('lfi').value='';
   renderGrid(S.ents[t]||[]);
@@ -982,15 +1003,67 @@ async function saveEnt(){
   const type=d._t;delete d._t;
   const p={action:'saveEntity',type,worldId:S.wid};
   Object.entries(d).forEach(([k,v])=>{if(v!=null&&v!=='')p[k]=v;});
+  const btn=document.querySelector('#vedit .eftr .bp');
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
   try{
     const saved=await api(p);
     if(!S.ents[type])S.ents[type]=[];
     const i=S.ents[type].findIndex(e=>e.id===saved.id);
     if(i>=0)S.ents[type][i]=saved;else S.ents[type].push(saved);
     S.eidx[saved.id]={...saved,_t:type};
+    // Refresh links from server (backend already updated them via parseLinks)
     S.links=await api({action:'getLinks',worldId:S.wid})||[];
-    updCounts();toast('Saved!','ok');S.cur={...saved,_t:type};openDet(saved.id,type);
-  }catch(e){toast('Save failed: '+e.message,'err');}
+    // Also derive any [[wikilinks]] client-side and merge, so the panel
+    // shows them instantly even if the server is slow or they are new
+    deriveWikiLinks(saved,type);
+    updCounts();toast('Saved!','ok');S.cur={...saved,_t:type};
+    if(btn){btn.disabled=false;btn.textContent='Save ⌘S';}
+    openDet(saved.id,type);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='Save ⌘S';}
+    toast('Save failed: '+e.message,'err');
+  }
+}
+
+// Derive [[wikilink]] connections from all text fields client-side.
+// Removes stale 'mentions' links for this entity, then adds new ones.
+// This mirrors what the Apps Script backend does, but instantly in the browser.
+function deriveWikiLinks(entity,type){
+  const textFields=['description','history','notes','appearance','personality','goals','secrets','consequences','rules','powers','methods','content'];
+  const mentioned={};
+  textFields.forEach(field=>{
+    const text=entity[field]||'';
+    const matches=text.match(/\[\[([^\]]+)\]\]/g)||[];
+    matches.forEach(m=>{
+      const name=m.slice(2,-2).trim().toLowerCase();
+      const found=Object.values(S.eidx).find(e=>e.name&&e.name.toLowerCase()===name&&e.id!==entity.id);
+      if(found&&!mentioned[found.id]){
+        mentioned[found.id]=true;
+      }
+    });
+  });
+  // Remove existing client-side 'mentions' links where sourceId === entity.id
+  S.links=S.links.filter(l=>!(l.sourceId===entity.id&&l.relation==='mentions'));
+  // Add new ones
+  Object.keys(mentioned).forEach(targetId=>{
+    const target=S.eidx[targetId];
+    if(!target)return;
+    // Avoid duplicating manual links
+    const alreadyLinked=S.links.some(l=>
+      (l.sourceId===entity.id&&l.targetId===targetId)||
+      (l.sourceId===targetId&&l.targetId===entity.id)
+    );
+    if(!alreadyLinked){
+      S.links.push({
+        id:'lnk_client_'+entity.id+'_'+targetId,
+        worldId:entity.worldId,
+        sourceId:entity.id,sourceType:type,
+        targetId,targetType:target._t||'',
+        relation:'mentions',
+        createdAt:new Date().toISOString()
+      });
+    }
+  });
 }
 function cancelEdit(){if(S.cur)openDet(S.cur.id,S.cur._t);else goList(S.type);}
 function confirmDel(){
@@ -1165,34 +1238,171 @@ async function placePin(x,y){
 }
 
 // ── GRAPH ─────────────────────────────────────────────
+let _graphAid=null; // animation frame id — cancel before re-rendering
 function renderGraph(){
-  const cv=document.getElementById('gc');const ctx=cv.getContext('2d');
-  const par=cv.parentElement;cv.width=par.clientWidth;cv.height=par.clientHeight;
-  const nodes=[];const links=[];
-  TYPES.forEach(t=>(S.ents[t]||[]).forEach(e=>nodes.push({id:e.id,lbl:e.name,type:t,x:Math.random()*(cv.width-100)+50,y:Math.random()*(cv.height-100)+50,vx:0,vy:0})));
-  S.links.forEach(l=>{if(nodes.find(n=>n.id===l.sourceId)&&nodes.find(n=>n.id===l.targetId))links.push({s:l.sourceId,t:l.targetId});});
-  if(!nodes.length){ctx.fillStyle='#5a5a7a';ctx.font='14px Crimson Pro,serif';ctx.textAlign='center';ctx.fillText('Create entries to see them here',cv.width/2,cv.height/2);return;}
-  let sel=null,drag=null,aid;
-  function sim(){
-    for(let i=0;i<nodes.length;i++){const a=nodes[i];for(let j=i+1;j<nodes.length;j++){const b=nodes[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=3000/(d*d);a.vx-=dx/d*f;a.vy-=dy/d*f;b.vx+=dx/d*f;b.vy+=dy/d*f;}a.vx+=(cv.width/2-a.x)*.001;a.vy+=(cv.height/2-a.y)*.001;}
-    links.forEach(l=>{const s=nodes.find(n=>n.id===l.s),t=nodes.find(n=>n.id===l.t);if(!s||!t)return;const dx=t.x-s.x,dy=t.y-s.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=(d-120)*.03;s.vx+=dx/d*f;s.vy+=dy/d*f;t.vx-=dx/d*f;t.vy-=dy/d*f;});
-    nodes.forEach(n=>{if(n===drag)return;n.x+=n.vx*.4;n.y+=n.vy*.4;n.vx*=.8;n.vy*=.8;n.x=Math.max(40,Math.min(cv.width-40,n.x));n.y=Math.max(30,Math.min(cv.height-30,n.y));});
+  if(_graphAid!==null){cancelAnimationFrame(_graphAid);_graphAid=null;}
+  const cv=document.getElementById('gc');
+  const par=cv.parentElement;
+  // Inject filter bar if not present
+  let filterBar=document.getElementById('graph-filter-bar');
+  if(!filterBar){
+    filterBar=document.createElement('div');
+    filterBar.id='graph-filter-bar';
+    filterBar.style.cssText='position:absolute;top:0;left:0;right:0;z-index:10;display:flex;gap:6px;padding:8px 14px;flex-wrap:wrap;pointer-events:none;background:linear-gradient(180deg,var(--b2) 60%,transparent)';
+    par.style.position='relative';
+    par.appendChild(filterBar);
   }
-  function draw(){
-    ctx.clearRect(0,0,cv.width,cv.height);
-    links.forEach(l=>{const s=nodes.find(n=>n.id===l.s),t=nodes.find(n=>n.id===l.t);if(!s||!t)return;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(t.x,t.y);ctx.strokeStyle='rgba(90,90,122,.4)';ctx.lineWidth=1.5;ctx.stroke();});
-    nodes.forEach(n=>{const m=TM[n.type]||{},iS=n===sel;ctx.beginPath();ctx.arc(n.x,n.y,iS?18:13,0,Math.PI*2);ctx.fillStyle=iS?'#c8a84b':(m.c||'#5a5a7a');ctx.fill();ctx.strokeStyle=iS?'#e0c870':'rgba(255,255,255,.08)';ctx.lineWidth=iS?2:1;ctx.stroke();ctx.fillStyle=iS?'#fff':'#ccccde';ctx.font=(iS?'bold ':'')+'11px Crimson Pro,serif';ctx.textAlign='center';ctx.fillText(n.lbl.length>16?n.lbl.slice(0,14)+'…':n.lbl,n.x,n.y+25);});
+  filterBar.innerHTML=['All',...TYPES].map(t=>`<button class="tlf graph-ft${t==='All'?` on`:''}" style="pointer-events:all" data-ft="${t}">${t==='All'?'All':((TM[t]?.i||'')+' '+t)}</button>`).join('');
+  let activeFilter='All';
+  filterBar.querySelectorAll('.graph-ft').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      activeFilter=btn.dataset.ft;
+      filterBar.querySelectorAll('.graph-ft').forEach(b=>b.classList.toggle('on',b.dataset.ft===activeFilter));
+      rebuildGraph();
+    });
+  });
+
+  // Graph viewport transform
+  let gZ=1,gOx=0,gOy=0;
+  let gPanDrag=false,gPanStart={x:0,y:0},gPanOrigin={x:0,y:0};
+  let gPinchDist=null;
+
+  function rebuildGraph(){
+    if(_graphAid!==null){cancelAnimationFrame(_graphAid);_graphAid=null;}
+    cv.width=par.clientWidth;cv.height=par.clientHeight-filterBar.offsetHeight;
+    cv.style.marginTop=filterBar.offsetHeight+'px';
+    const ctx=cv.getContext('2d');
+    const nodes=[];const links=[];
+    const types=activeFilter==='All'?TYPES:[activeFilter];
+    types.forEach(t=>(S.ents[t]||[]).forEach(e=>nodes.push({id:e.id,lbl:e.name,type:t,
+      x:Math.random()*(cv.width-120)+60,y:Math.random()*(cv.height-80)+40,vx:0,vy:0})));
+    const nodeIds=new Set(nodes.map(n=>n.id));
+    S.links.forEach(l=>{if(nodeIds.has(l.sourceId)&&nodeIds.has(l.targetId))links.push({s:l.sourceId,t:l.targetId});});
+    if(!nodes.length){
+      ctx.fillStyle='#5a5a7a';ctx.font='14px Crimson Pro,serif';ctx.textAlign='center';
+      ctx.fillText('No entries to display',cv.width/2,cv.height/2);return;
+    }
+    let sel=null,drag=null;
+
+    function toWorld(cx,cy){return{x:(cx-gOx)/gZ,y:(cy-gOy)/gZ};}
+    function toScreen(wx,wy){return{x:wx*gZ+gOx,y:wy*gZ+gOy};}
+
+    function sim(){
+      for(let i=0;i<nodes.length;i++){
+        const a=nodes[i];
+        for(let j=i+1;j<nodes.length;j++){
+          const b=nodes[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=3000/(d*d);
+          a.vx-=dx/d*f;a.vy-=dy/d*f;b.vx+=dx/d*f;b.vy+=dy/d*f;
+        }
+        a.vx+=(cv.width/2/gZ-a.x)*.001;a.vy+=(cv.height/2/gZ-a.y)*.001;
+      }
+      links.forEach(l=>{
+        const s=nodes.find(n=>n.id===l.s),t=nodes.find(n=>n.id===l.t);if(!s||!t)return;
+        const dx=t.x-s.x,dy=t.y-s.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=(d-120)*.03;
+        s.vx+=dx/d*f;s.vy+=dy/d*f;t.vx-=dx/d*f;t.vy-=dy/d*f;
+      });
+      nodes.forEach(n=>{
+        if(n===drag)return;
+        n.x+=n.vx*.4;n.y+=n.vy*.4;n.vx*=.8;n.vy*=.8;
+        n.x=Math.max(40,Math.min(cv.width/gZ-40,n.x));
+        n.y=Math.max(30,Math.min(cv.height/gZ-30,n.y));
+      });
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.save();
+      ctx.translate(gOx,gOy);ctx.scale(gZ,gZ);
+      links.forEach(l=>{
+        const s=nodes.find(n=>n.id===l.s),t=nodes.find(n=>n.id===l.t);if(!s||!t)return;
+        ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(t.x,t.y);
+        ctx.strokeStyle='rgba(90,90,122,.4)';ctx.lineWidth=1.5/gZ;ctx.stroke();
+      });
+      nodes.forEach(n=>{
+        const m=TM[n.type]||{},iS=n===sel;
+        ctx.beginPath();ctx.arc(n.x,n.y,iS?18:13,0,Math.PI*2);
+        ctx.fillStyle=iS?'#c8a84b':(m.c||'#5a5a7a');ctx.fill();
+        ctx.strokeStyle=iS?'#e0c870':'rgba(255,255,255,.08)';ctx.lineWidth=(iS?2:1)/gZ;ctx.stroke();
+        ctx.fillStyle=iS?'#fff':'#ccccde';
+        ctx.font=(iS?'bold ':'')+Math.max(9,11/gZ)+'px Crimson Pro,serif';
+        ctx.textAlign='center';
+        ctx.fillText(n.lbl.length>16?n.lbl.slice(0,14)+'…':n.lbl,n.x,n.y+25);
+      });
+      ctx.restore();
+      // Zoom level indicator
+      ctx.fillStyle='rgba(90,90,122,.6)';ctx.font='11px Crimson Pro,serif';ctx.textAlign='right';
+      ctx.fillText('⌀ '+Math.round(gZ*100)+'%',cv.width-10,cv.height-8);
+    }
+
+    function loop(){sim();draw();_graphAid=requestAnimationFrame(loop);}
+    loop();
+
+    function gn(cx,cy){
+      const w=toWorld(cx,cy);
+      const r=cv.getBoundingClientRect();
+      const mx=cx-r.left,my=cy-r.top;
+      const wx=(mx-gOx)/gZ,wy=(my-gOy)/gZ;
+      return nodes.find(n=>Math.hypot(n.x-wx,n.y-wy)<20)||null;
+    }
+
+    // Mouse events
+    cv.onmousedown=e=>{const n=gn(e.clientX,e.clientY);if(n){drag=n;}else{gPanDrag=true;gPanStart={x:e.clientX,y:e.clientY};gPanOrigin={x:gOx,y:gOy};}};
+    window.onmousemove=e=>{
+      if(drag){const r=cv.getBoundingClientRect();const wx=(e.clientX-r.left-gOx)/gZ,wy=(e.clientY-r.top-gOy)/gZ;drag.x=wx;drag.y=wy;}
+      else if(gPanDrag){gOx=gPanOrigin.x+(e.clientX-gPanStart.x);gOy=gPanOrigin.y+(e.clientY-gPanStart.y);}
+    };
+    window.onmouseup=e=>{
+      if(drag){const n=gn(e.clientX,e.clientY);if(n===drag){sel=sel===n?null:n;if(sel)openDet(sel.id,sel.type);}drag=null;}
+      gPanDrag=false;
+    };
+    // Scroll zoom
+    cv.onwheel=e=>{
+      e.preventDefault();
+      const r=cv.getBoundingClientRect();
+      const mx=e.clientX-r.left,my=e.clientY-r.top;
+      const factor=e.deltaY<0?1.1:0.9;
+      const newZ=Math.min(4,Math.max(0.15,gZ*factor));
+      gOx=mx-(mx-gOx)*(newZ/gZ);
+      gOy=my-(my-gOy)*(newZ/gZ);
+      gZ=newZ;
+    },{passive:false};
+    // Touch events
+    cv.ontouchstart=e=>{
+      if(e.touches.length===2){
+        gPinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+        gPanDrag=false;drag=null;
+      } else if(e.touches.length===1){
+        const t=e.touches[0],n=gn(t.clientX,t.clientY);
+        if(n)drag=n;else{gPanDrag=true;gPanStart={x:t.clientX,y:t.clientY};gPanOrigin={x:gOx,y:gOy};}
+      }
+    };
+    cv.ontouchmove=e=>{
+      if(e.touches.length===2&&gPinchDist!==null){
+        e.preventDefault();
+        const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+        const factor=d/gPinchDist;gPinchDist=d;
+        const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-cv.getBoundingClientRect().left;
+        const my=(e.touches[0].clientY+e.touches[1].clientY)/2-cv.getBoundingClientRect().top;
+        const newZ=Math.min(4,Math.max(0.15,gZ*factor));
+        gOx=mx-(mx-gOx)*(newZ/gZ);gOy=my-(my-gOy)*(newZ/gZ);gZ=newZ;
+      } else if(e.touches.length===1){
+        if(drag){const r=cv.getBoundingClientRect();const t=e.touches[0];drag.x=(t.clientX-r.left-gOx)/gZ;drag.y=(t.clientY-r.top-gOy)/gZ;}
+        else if(gPanDrag){const t=e.touches[0];gOx=gPanOrigin.x+(t.clientX-gPanStart.x);gOy=gPanOrigin.y+(t.clientY-gPanStart.y);}
+      }
+    },{passive:false};
+    cv.ontouchend=()=>{drag=null;gPanDrag=false;gPinchDist=null;};
+
+    const ob=new MutationObserver(()=>{
+      if(!cv.closest('.on')){
+        cancelAnimationFrame(_graphAid);_graphAid=null;
+        cv.onmousedown=null;window.onmousemove=null;window.onmouseup=null;
+        cv.onwheel=null;cv.ontouchstart=null;cv.ontouchmove=null;cv.ontouchend=null;
+        ob.disconnect();
+      }
+    });
+    ob.observe(document.getElementById('vgraph'),{attributes:true,attributeFilter:['class']});
   }
-  function loop(){sim();draw();aid=requestAnimationFrame(loop);}loop();
-  function gn(cx,cy){const r=cv.getBoundingClientRect(),mx=cx-r.left,my=cy-r.top;return nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<20)||null;}
-  cv.onmousedown=e=>{const n=gn(e.clientX,e.clientY);if(n)drag=n;};
-  cv.onmousemove=e=>{if(!drag)return;const r=cv.getBoundingClientRect();drag.x=e.clientX-r.left;drag.y=e.clientY-r.top;};
-  cv.onmouseup=e=>{if(!drag)return;const n=gn(e.clientX,e.clientY);if(n===drag){sel=sel===n?null:n;if(sel)openDet(sel.id,sel.type);}drag=null;};
-  cv.ontouchstart=e=>{const t=e.touches[0],n=gn(t.clientX,t.clientY);if(n)drag=n;};
-  cv.ontouchmove=e=>{if(!drag)return;const r=cv.getBoundingClientRect(),t=e.touches[0];drag.x=t.clientX-r.left;drag.y=t.clientY-r.top;};
-  cv.ontouchend=()=>{drag=null;};
-  const ob=new MutationObserver(()=>{if(!cv.closest('.on')){cancelAnimationFrame(aid);ob.disconnect();}});
-  ob.observe(document.getElementById('vgraph'),{attributes:true,attributeFilter:['class']});
+  rebuildGraph();
 }
 
 // ── TIMELINE ──────────────────────────────────────────
@@ -1427,6 +1637,7 @@ function closeWrRefs(){
 
 function onWrInput(){
   updWrStats();
+  S.wrUnsaved=true;
   document.getElementById('wr-save-status').textContent='Unsaved…';
   const hs=document.getElementById('hud-status');if(hs)hs.textContent='Unsaved…';
   clearTimeout(S.wrSaveTimer);
@@ -1435,19 +1646,29 @@ function onWrInput(){
 
 async function saveWriter(){
   const content=document.getElementById('wr-text').value;
+  // Corruption guard: never overwrite with empty if we had content
+  if(!content.trim()&&S.wrDoc&&S.wrDoc.content&&S.wrDoc.content.trim().length>50){
+    document.getElementById('wr-save-status').textContent='⚠ Empty — not saved';
+    toast('Save blocked: content appears empty. Restore your text first.','err');
+    return;
+  }
   const gi=document.getElementById('wr-goal-inp-drawer')||document.getElementById('wr-goal-inp');
   const wordGoal=gi?.value||'0';
   try{
     document.getElementById('wr-save-status').textContent='Saving…';
     const hs=document.getElementById('hud-status');if(hs)hs.textContent='Saving…';
     S.wrDoc=await api({action:'saveDoc',worldId:S.wid,type:'novel',content,wordGoal});
+    S.wrUnsaved=false;
     document.getElementById('wr-save-status').textContent='Saved ✓';
     if(hs)hs.textContent='Saved ✓';
     setTimeout(()=>{const el=document.getElementById('wr-save-status');if(el)el.textContent='';const h=document.getElementById('hud-status');if(h)h.textContent='';},2500);
   }catch(e){
-    document.getElementById('wr-save-status').textContent='Save failed';
-    const hs=document.getElementById('hud-status');if(hs)hs.textContent='Save failed';
-    toast('Save failed: '+e.message,'err');
+    document.getElementById('wr-save-status').textContent='Save failed ⚠';
+    const hs=document.getElementById('hud-status');if(hs)hs.textContent='Save failed ⚠';
+    toast('Save failed — your text is safe locally. Retrying in 10s…','err');
+    // Retry once after 10 seconds to recover from transient errors
+    clearTimeout(S.wrSaveTimer);
+    S.wrSaveTimer=setTimeout(saveWriter,10000);
   }
 }
 
@@ -1546,11 +1767,11 @@ function delWrRef(i){
 // ── DRAG & DROP PANEL REORDER (Desktop) ───────────────
 // Allows reordering sidebar sections via drag on their handles
 function initDragPanels(){
-  // Only meaningful on wider screens — sidebar sections
   const sidebar=document.getElementById('sidebar');
+  if(sidebar.dataset.dragInit)return; // prevent duplicate listeners
+  sidebar.dataset.dragInit='1';
   const sections=sidebar.querySelectorAll('.ss');
   sections.forEach(sec=>{
-    // Add drag handle
     const hdr=sec.querySelector('.ssl');
     if(!hdr)return;
     const handle=document.createElement('span');
@@ -1606,6 +1827,15 @@ function ago(iso){if(!iso)return'';const d=new Date(iso),n=new Date(),diff=(n-d)
 function toast(msg,type=''){const el=document.createElement('div');el.className='toast '+(type==='ok'?'tok':type==='err'?'terr':'');el.textContent=msg;document.getElementById('tc').appendChild(el);setTimeout(()=>el.remove(),3200);}
 
 window.addEventListener('load',boot);
+
+// Prevent accidental page close/refresh with unsaved writer content
+window.addEventListener('beforeunload',e=>{
+  if(S.wrUnsaved){
+    e.preventDefault();
+    e.returnValue='You have unsaved changes in the Novel Writer.';
+    return e.returnValue;
+  }
+});
 </script>
 </body>
 </html>
