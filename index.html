@@ -1022,6 +1022,58 @@ function buildEditor(e,type){
   document.getElementById('ebody').innerHTML=`
     <div class="ef"><div class="el">Type</div><select class="esel" id="ef__t" onchange="chType(this.value)">${TYPES.map(t=>`<option value="${t}" ${t===type?'selected':''}>${TM[t]?.i} ${t}</option>`).join('')}</select></div>
     ${(FD[type]||[]).map(f=>`<div class="ef ${f.w?'fw':''}"><div class="el">${f.l}${f.h?`<span class="hint">${f.h}</span>`:''}</div>${fImgInp(f,e[f.k]||'')}</div>`).join('')}`;
+  attachLiveGhostListeners();
+}
+
+// Live ghost detection while typing in editor textareas.
+// Runs on every input event, debounced 300ms.
+let _liveGhostTimer=null;
+function attachLiveGhostListeners(){
+  document.querySelectorAll('#ebody textarea.eta').forEach(ta=>{
+    ta.addEventListener('input',()=>{
+      clearTimeout(_liveGhostTimer);
+      _liveGhostTimer=setTimeout(liveRebuildGhosts,300);
+    });
+  });
+}
+
+// Rebuild ghosts using current saved ents PLUS the unsaved editor content.
+// This makes ghost nodes appear immediately while typing [[Name]].
+function liveRebuildGhosts(){
+  // Collect live text from all open editor fields
+  const liveTexts=[];
+  document.querySelectorAll('#ebody textarea.eta').forEach(ta=>liveTexts.push(ta.value||''));
+  const combined=liveTexts.join('\n');
+
+  // Find [[names]] in the live editor text
+  const matches=combined.match(/\[\[([^\]]+)\]\]/g)||[];
+  let changed=false;
+  matches.forEach(m=>{
+    const rawName=m.slice(2,-2).trim();
+    const key=rawName.toLowerCase();
+    const exists=Object.values(S.eidx).some(e=>e.name&&e.name.toLowerCase()===key);
+    if(!exists&&!S.ghosts[key]){
+      // New ghost found — add with a temporary "editing" source marker
+      S.ghosts[key]={name:rawName,sources:[{id:'__editing__',type:'editing'}]};
+      changed=true;
+    }
+  });
+
+  // Also remove ghosts that were only from live editing but are now gone from the text
+  const liveKeys=new Set(matches.map(m=>m.slice(2,-2).trim().toLowerCase()));
+  Object.keys(S.ghosts).forEach(key=>{
+    const g=S.ghosts[key];
+    const onlyFromEditor=g.sources.length===1&&g.sources[0].id==='__editing__';
+    if(onlyFromEditor&&!liveKeys.has(key)){
+      delete S.ghosts[key];
+      changed=true;
+    }
+  });
+
+  if(changed&&S.view==='graph'){
+    // Soft refresh: just rebuild the graph nodes without resetting zoom/pan
+    renderGraph();
+  }
 }
 function fImgInp(f,v){
   if(f.k==='imageUrl'){
