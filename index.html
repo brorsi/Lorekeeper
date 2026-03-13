@@ -61,7 +61,6 @@ html,body{height:100%;min-height:-webkit-fill-available;width:100%;overflow:hidd
 /* MAIN */
 #main{flex:1;overflow:hidden;background:var(--b2);position:relative;min-width:0;display:flex;flex-direction:column}
 .view{display:none}.view.on{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0}
-/* Views that need internal scroll */
 #vdash,#vtl{overflow-y:auto!important}
 #vlist{overflow:hidden!important;display:none}#vlist.on{display:flex!important}
 
@@ -135,14 +134,25 @@ html,body{height:100%;min-height:-webkit-fill-available;width:100%;overflow:hidd
 .dfv{font-size:.9rem;color:var(--t1);line-height:1.7}
 .wlink{color:var(--ac);cursor:pointer;border-bottom:1px dotted rgba(122,143,200,.4);-webkit-tap-highlight-color:transparent}
 .wlink:hover{color:var(--sv2)}
+/* Ghost wlink — for [[names]] that don't exist yet */
+.wlink-ghost{color:var(--t4);cursor:pointer;border-bottom:1px dashed rgba(90,90,122,.5);font-style:italic;-webkit-tap-highlight-color:transparent}
+.wlink-ghost:hover{color:var(--t2)}
 .csh{font-family:var(--fd);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);margin-bottom:9px;display:flex;align-items:center;gap:6px}
 .csh::after{content:'';flex:1;height:1px;background:var(--b5)}
 .csi{display:flex;align-items:center;gap:8px;padding:6px 7px;border-radius:var(--r);cursor:pointer;transition:.15s;margin-bottom:2px;-webkit-tap-highlight-color:transparent}
 .csi:hover,.csi:active{background:var(--b3)}
+/* Ghost connection item in sidebar */
+.csi-ghost{display:flex;align-items:center;gap:8px;padding:6px 7px;border-radius:var(--r);cursor:pointer;transition:.15s;margin-bottom:2px;opacity:.6;-webkit-tap-highlight-color:transparent}
+.csi-ghost:hover,.csi-ghost:active{background:var(--b3);opacity:1}
 .cst{font-size:.58rem;text-transform:uppercase;padding:1px 5px;border-radius:3px;background:var(--b5);color:var(--t4);flex-shrink:0}
 .csn{font-size:.82rem;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Ghost name in sidebar */
+.csn-ghost{font-size:.82rem;color:var(--t4);font-style:italic;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .adlb{width:100%;background:none;border:1px dashed var(--b5);color:var(--t4);font-family:var(--fb);font-size:.78rem;padding:6px;border-radius:var(--r);cursor:pointer;margin-top:8px;-webkit-appearance:none}
 .adlb:hover{border-color:var(--t3);color:var(--t2)}
+/* Subtle manual link button */
+.adlb-minor{width:100%;background:none;border:none;color:var(--t4);font-family:var(--fb);font-size:.72rem;padding:4px 6px;border-radius:var(--r);cursor:pointer;margin-top:4px;text-align:left;opacity:.6;-webkit-appearance:none}
+.adlb-minor:hover{opacity:1;color:var(--t3)}
 
 /* EDITOR */
 .ehdr{padding:12px 20px;border-bottom:1px solid var(--b5);background:var(--b1);display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -306,7 +316,6 @@ html,body{height:100%;min-height:-webkit-fill-available;width:100%;overflow:hidd
 #wr-text::placeholder{color:var(--t4);font-style:italic}
 #np-text{caret-color:var(--gd)}
 #np-text::placeholder{color:var(--t4);font-style:italic}
-/* References drawer */
 #wr-refs-drawer{position:fixed;top:0;right:0;bottom:0;width:260px;background:var(--b1);border-left:1px solid var(--b5);z-index:600;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;box-shadow:-8px 0 30px rgba(0,0,0,.4)}
 #wr-refs-drawer.open{transform:translateX(0)}
 #wr-refs-drawer-hdr{padding:12px 14px;border-bottom:1px solid var(--b5);display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -317,18 +326,13 @@ html,body{height:100%;min-height:-webkit-fill-available;width:100%;overflow:hidd
 .wr-ref-card{position:relative}
 .wr-ref-del{position:absolute;top:4px;right:4px;background:rgba(10,10,15,.85);border:1px solid var(--b6);color:var(--dn);border-radius:var(--r);width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;cursor:pointer;opacity:0;transition:.15s}
 .wr-ref-card:hover .wr-ref-del,.wr-ref-card:active .wr-ref-del{opacity:1}
-/* Writer topbar */
 #wr-topbar{padding:8px 16px;border-bottom:1px solid var(--b5);background:var(--b1);display:flex;align-items:center;gap:8px;flex-shrink:0}
-/* Writer word count badge top-right — visibility controlled by in-writer body class */
-/* Focus button anchored bottom-right */
 #wr-focus-anchor{position:absolute;bottom:20px;right:20px;z-index:100}
 @media(max-width:680px){
   #wr-text{padding:20px 5% 100px}
   #wr-focus-anchor{bottom:calc(60px + var(--sb) + 10px)}
   #wr-refs-drawer{width:85vw}
 }
-
-/* Word count badge — only show in writer view */
 #wr-wc-badge{font-family:var(--fd);font-size:.78rem;color:var(--gd);background:var(--b3);border:1px solid var(--b5);border-radius:10px;padding:2px 10px;white-space:nowrap;flex-shrink:0;display:none}
 body.in-writer #wr-wc-badge{display:flex!important}
 #wr-iphone-hud{display:none!important}
@@ -360,28 +364,17 @@ body.focus-mode #focus-exit{display:block}
   align-items:center;
   gap:10px;
 }
-#wr-iphone-hud .hud-wc{
-  font-family:var(--fd);font-size:.88rem;color:var(--gd);white-space:nowrap;
-}
-#wr-iphone-hud .hud-prog{
-  flex:1;height:3px;background:var(--b5);border-radius:2px;overflow:hidden;
-}
-#wr-iphone-hud .hud-progf{
-  height:100%;background:linear-gradient(90deg,var(--gdd),var(--gd));border-radius:2px;transition:.4s;width:0%;
-}
-#wr-iphone-hud .hud-status{
-  font-size:.68rem;color:var(--t4);white-space:nowrap;
-}
-@media(max-width:680px){
-  #wr-iphone-hud{display:flex}
-}
+#wr-iphone-hud .hud-wc{font-family:var(--fd);font-size:.88rem;color:var(--gd);white-space:nowrap;}
+#wr-iphone-hud .hud-prog{flex:1;height:3px;background:var(--b5);border-radius:2px;overflow:hidden;}
+#wr-iphone-hud .hud-progf{height:100%;background:linear-gradient(90deg,var(--gdd),var(--gd));border-radius:2px;transition:.4s;width:0%;}
+#wr-iphone-hud .hud-status{font-size:.68rem;color:var(--t4);white-space:nowrap;}
+@media(max-width:680px){#wr-iphone-hud{display:flex}}
 .drag-handle{cursor:grab;color:var(--t4);font-size:.9rem;padding:0 6px;user-select:none;flex-shrink:0}
 .drag-handle:hover{color:var(--t2)}
 .drag-handle:active{cursor:grabbing}
 .panel{transition:box-shadow .15s}
 .panel.dragging{opacity:.5;box-shadow:0 0 0 2px var(--gdd)}
 .panel.drag-over{box-shadow:inset 0 0 0 2px var(--ac)}
-
 </style>
 </head>
 <body>
@@ -492,7 +485,7 @@ body.focus-mode #focus-exit{display:block}
       <div id="vgraph" class="view">
         <div class="ghdr">
           <span style="font-family:var(--fd);font-size:.82rem;color:var(--sv);letter-spacing:.08em">🕸 Connection Graph</span>
-          <span style="font-size:.74rem;color:var(--t4);margin-left:6px">Tap node to open · Drag to move</span>
+          <span style="font-size:.74rem;color:var(--t4);margin-left:6px">Tap node to open · Drag to move · Ghost nodes = unwritten entries</span>
         </div>
         <canvas id="gc"></canvas>
       </div>
@@ -514,7 +507,6 @@ body.focus-mode #focus-exit{display:block}
 
       <!-- NOVEL WRITER -->
       <div id="vwriter" class="view" style="flex-direction:column!important;overflow:hidden;position:relative">
-        <!-- Topbar -->
         <div id="wr-topbar">
           <span style="font-family:var(--fd);font-size:.82rem;color:var(--sv);letter-spacing:.08em">✍ Novel Writer</span>
           <div class="tspc"></div>
@@ -523,26 +515,21 @@ body.focus-mode #focus-exit{display:block}
           <button class="bs" style="font-size:.72rem;padding:4px 9px" onclick="exportNovel()">⬇ Export</button>
           <button class="bs" style="font-size:.72rem;padding:4px 9px" onclick="openWrRefs()">🖼 Refs</button>
         </div>
-        <!-- Writing area — full width, full height -->
         <textarea id="wr-text" spellcheck="true" autocorrect="on" autocapitalize="sentences"
           placeholder="Begin your story…" oninput="onWrInput()"></textarea>
-        <!-- Progress bar (hidden when no goal) -->
         <div id="wr-prog-wrap" style="height:3px;background:var(--b5);display:none;flex-shrink:0">
           <div id="wr-prog" style="height:100%;background:linear-gradient(90deg,var(--gdd),var(--gd));transition:.4s;width:0%"></div>
         </div>
-        <!-- Focus button anchored bottom-right -->
         <div id="wr-focus-anchor">
           <button class="bs" id="wr-focus-btn" style="font-size:.72rem;padding:6px 13px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)" onclick="toggleFocusMode()">⛶ Focus</button>
         </div>
-        <!-- Hidden inputs -->
         <input type="file" id="wr-rfi" accept="image/*" multiple style="display:none" onchange="onWrRefImg(event)"/>
-        <!-- Word goal hidden input (kept for JS compat) -->
         <input id="wr-goal-inp" type="number" style="display:none" oninput="updWrStats()"/>
         <div id="wr-goal-txt" style="display:none"></div>
         <div id="wr-wc" style="display:none">0</div>
       </div>
 
-      <!-- REFERENCES DRAWER (slide-in from right) -->
+      <!-- REFERENCES DRAWER -->
       <div id="wr-refs-backdrop" onclick="closeWrRefs()"></div>
       <div id="wr-refs-drawer">
         <div id="wr-refs-drawer-hdr">
@@ -551,7 +538,6 @@ body.focus-mode #focus-exit{display:block}
           <button class="bs" style="font-size:.65rem;padding:3px 8px;margin-left:4px" onclick="closeWrRefs()">✕</button>
         </div>
         <div id="wr-refs" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px"></div>
-        <!-- Word count + goal inside drawer -->
         <div style="padding:14px;border-top:1px solid var(--b5);flex-shrink:0">
           <div style="font-family:var(--fd);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);margin-bottom:6px">Word Goal</div>
           <input id="wr-goal-inp-drawer" class="ei" type="number" placeholder="Word goal…" style="width:100%;font-size:.82rem;padding:6px 9px" oninput="onWrGoalChange()"/>
@@ -609,22 +595,25 @@ body.focus-mode #focus-exit{display:block}
 
 <script>
 // ══════════════════════════════════════════════════════
-// LOREKEEPER — All API calls use GET only. No POST = no CORS.
+// LOREKEEPER
 // ══════════════════════════════════════════════════════
 const AKEY='lk_api', WKEY='lk_wid', VKEY='lk_view', WNKEY='lk_wname';
 
 const S={
   api:'',worlds:[],wid:'',
   ents:{},eidx:{},links:[],pins:[],cats:[],
+  // ghosts: map of lowercaseName → {name:string, sources:[{id,type,field}]}
+  // "sources" = which real entities reference this ghost via [[...]]
+  ghosts:{},
   view:'dash',type:'Characters',
   cur:null,editing:null,
   sres:[],ssel:0,
   mz:1,mo:{x:0,y:0},pinMode:false,pendPin:null,
   fabOpen:false,
-  mbImages:[],   // [{id,src,caption}] stored in localStorage per world
-  wrDoc:null,    // novel doc from sheet
-  npDoc:null,    // notepad doc from sheet
-  wrRefs:[],     // [{id,src}] reference images, localStorage per world
+  mbImages:[],
+  wrDoc:null,
+  npDoc:null,
+  wrRefs:[],
   focusMode:false,
   wrSaveTimer:null,
   npSaveTimer:null,
@@ -643,6 +632,8 @@ const TM={
 };
 const CNTS={Characters:'cCh',Locations:'cLo',Factions:'cFa',Events:'cEv',Lore:'cLr',Items:'cIt',Races:'cRa'};
 const VIDS={dash:'vdash',map:'vmap',tl:'vtl',graph:'vgraph',moodboard:'vmoodboard',writer:'vwriter',notepad:'vnotepad',list:'vlist',det:'vdet',edit:'vedit'};
+// Text fields that can contain [[wikilinks]]
+const WIKI_FIELDS=['description','history','notes','appearance','personality','goals','secrets','consequences','rules','powers','methods','content'];
 
 const FD={
   Characters:[{k:'name',l:'Name',t:'i',req:1},{k:'aliases',l:'Aliases',t:'i'},{k:'race',l:'Race',t:'i'},{k:'gender',l:'Gender',t:'i'},{k:'age',l:'Age',t:'i'},{k:'status',l:'Status',t:'s',o:['Alive','Dead','Unknown','Missing']},{k:'occupation',l:'Occupation',t:'i'},{k:'birthPlace',l:'Birth Place',t:'i'},{k:'faction',l:'Faction',t:'i'},{k:'tags',l:'Tags',t:'i'},{k:'description',l:'Description',t:'ta',h:'[[Name]] to link',w:1},{k:'appearance',l:'Appearance',t:'ta',w:1},{k:'personality',l:'Personality',t:'ta',w:1},{k:'goals',l:'Goals',t:'ta',w:1},{k:'secrets',l:'Secrets',t:'ta',w:1},{k:'notes',l:'Notes',t:'ta',w:1},{k:'imageUrl',l:'Image URL',t:'i',w:1}],
@@ -654,19 +645,14 @@ const FD={
   Races:[{k:'name',l:'Name',t:'i',req:1},{k:'aliases',l:'Aliases',t:'i'},{k:'homeland',l:'Homeland',t:'i'},{k:'lifespan',l:'Lifespan',t:'i'},{k:'traits',l:'Traits',t:'i'},{k:'culture',l:'Culture',t:'i'},{k:'tags',l:'Tags',t:'i'},{k:'description',l:'Description',t:'ta',h:'[[Name]] to link',w:1},{k:'history',l:'History',t:'ta',w:1},{k:'notes',l:'Notes',t:'ta',w:1},{k:'imageUrl',l:'Image URL',t:'i',w:1}],
 };
 
-// ── API: GET for simple calls, GET with chunked content for large payloads ──
-// Google Apps Script only supports GET for CORS-safe responses.
-// For large text (novel/entity descriptions) we split content out and send
-// it as a base64-encoded param to stay within URL limits (~7500 chars safe).
-const API_SAFE_LEN = 6000; // leave headroom for other params
+// ── API ────────────────────────────────────────────────
+const API_SAFE_LEN = 6000;
 
 async function api(p){
+  if(!S.api) throw new Error('No API URL configured');
   const action = p.action || '';
-  // For actions that may carry large text, encode content fields safely
   const largeActions = ['saveDoc','saveEntity'];
-  if(largeActions.includes(action)){
-    return apiLarge(p);
-  }
+  if(largeActions.includes(action)) return apiLarge(p);
   const u=new URL(S.api);
   Object.entries(p).forEach(([k,v])=>{ if(v!=null) u.searchParams.set(k,String(v)); });
   const r=await fetch(u.toString(),{method:'GET',redirect:'follow',credentials:'omit'});
@@ -676,15 +662,12 @@ async function api(p){
   return d.data;
 }
 
-// For large payloads: base64-encode large fields, send _encoded=1 flag so
-// the Apps Script backend knows to decode them.
 async function apiLarge(p){
   const u=new URL(S.api);
   const encoded={};
   Object.entries(p).forEach(([k,v])=>{
     if(v==null) return;
     const s=String(v);
-    // Encode fields that may be large
     if(['content','description','history','notes','appearance','personality',
         'goals','secrets','consequences','rules','powers','imageUrl'].includes(k) && s.length>200){
       encoded[k]=btoa(unescape(encodeURIComponent(s)));
@@ -694,7 +677,6 @@ async function apiLarge(p){
   });
   if(Object.keys(encoded).length){
     u.searchParams.set('_encoded','1');
-    // Send encoded fields as a single JSON blob to avoid per-field URL length issues
     u.searchParams.set('_data', btoa(unescape(encodeURIComponent(JSON.stringify(encoded)))));
   }
   const r=await fetch(u.toString(),{method:'GET',redirect:'follow',credentials:'omit'});
@@ -712,36 +694,24 @@ async function boot(){
   S.api=localStorage.getItem(AKEY)||'';
   S.wid=localStorage.getItem(WKEY)||'';
   const savedName=localStorage.getItem(WNKEY);
-
-  // No API url at all — first time ever
   if(!S.api){hideLdr();showSetup(false);return;}
-
-  // We have API but no saved world — just need to pick one
   if(!S.wid){
     setLdrTxt('Loading worlds…');
-    try{
-      await api({action:'init'});
-      S.worlds=await api({action:'getWorlds'})||[];
-    }catch(e){console.error('Boot error:',e);}
+    try{await api({action:'init'});S.worlds=await api({action:'getWorlds'})||[];}catch(e){console.error('Boot error:',e);}
     hideLdr();showSetup(true);return;
   }
-
-  // We have both API and a saved world — go straight in
   setLdrTxt('Entering '+(savedName||'your world')+'…');
   document.getElementById('wsn').textContent=savedName||'Loading…';
   try{
     await api({action:'init'});
     setLdrTxt('Loading worlds…');
     S.worlds=await api({action:'getWorlds'})||[];
-    if(!S.worlds.find(w=>w.id===S.wid)){
-      S.worlds.push({id:S.wid,name:savedName||S.wid,description:''});
-    }
+    if(!S.worlds.find(w=>w.id===S.wid)) S.worlds.push({id:S.wid,name:savedName||S.wid,description:''});
     setLdrTxt('Opening your world…');
     await enterWorld(S.wid,false);
     hideLdr();
   }catch(e){
     console.error('Boot error:',e);
-    // API had an error — try loadAll directly with what we know
     if(savedName)S.worlds=[{id:S.wid,name:savedName,description:''}];
     try{
       setLdrTxt('Connecting…');
@@ -785,10 +755,8 @@ function renderSetupWorlds(){
 async function pickWorld(id){hideSetup();await enterWorld(id,true);}
 
 async function enterWorld(id,save){
-  S.wid=id; if(save){localStorage.setItem(WKEY,id);}
-  // Reset cached docs so they reload fresh for this world
-  S.wrDoc=null; S.npDoc=null;
-  // Also clear the textarea content so stale text isn't shown
+  S.wid=id;if(save)localStorage.setItem(WKEY,id);
+  S.wrDoc=null;S.npDoc=null;
   const wta=document.getElementById('wr-text');if(wta)wta.value='';
   const nta=document.getElementById('np-text');if(nta)nta.value='';
   const w=S.worlds.find(x=>x.id===id);
@@ -847,12 +815,75 @@ async function loadAll(){
   ]);
   S.eidx={};
   TYPES.forEach(t=>(S.ents[t]||[]).forEach(e=>{S.eidx[e.id]={...e,_t:t};}));
+  rebuildGhosts();
   updCounts();renderDash();renderCats();loadMap();loadMoodboard();loadWrRefs();
+}
+
+// ── GHOST SYSTEM ──────────────────────────────────────
+// Scans all entities for [[Name]] references to non-existent entries.
+// Populates S.ghosts: { lowercaseName: { name, sources:[{id,type}] } }
+function rebuildGhosts(){
+  const newGhosts={};
+  TYPES.forEach(type=>{
+    (S.ents[type]||[]).forEach(entity=>{
+      WIKI_FIELDS.forEach(field=>{
+        const text=entity[field]||'';
+        const matches=text.match(/\[\[([^\]]+)\]\]/g)||[];
+        matches.forEach(m=>{
+          const rawName=m.slice(2,-2).trim();
+          const key=rawName.toLowerCase();
+          // Only ghost if no real entity with this name exists
+          const exists=Object.values(S.eidx).some(e=>e.name&&e.name.toLowerCase()===key);
+          if(!exists){
+            if(!newGhosts[key]) newGhosts[key]={name:rawName,sources:[]};
+            // Avoid duplicate sources
+            if(!newGhosts[key].sources.some(s=>s.id===entity.id)){
+              newGhosts[key].sources.push({id:entity.id,type});
+            }
+          }
+        });
+      });
+    });
+  });
+  S.ghosts=newGhosts;
+}
+
+// Open a new entry editor with the ghost name pre-filled.
+// Shows a type picker first.
+function createFromGhost(ghostName){
+  const type=S.type||'Characters';
+  document.getElementById('mtit').textContent='Create "'+ghostName+'"';
+  document.getElementById('momb').innerHTML=`
+    <p style="color:var(--t2);font-size:.85rem;margin-bottom:4px">
+      <strong style="color:var(--sv2)">${esc(ghostName)}</strong> is referenced but doesn't exist yet.<br>What type of entry is this?
+    </p>
+    <select class="esel" id="ghost-type" style="width:100%">
+      ${TYPES.map(t=>`<option value="${t}" ${t===type?'selected':''}>${TM[t].i} ${t}</option>`).join('')}
+    </select>`;
+  const f=document.getElementById('momf');f.innerHTML='';
+  [{l:'Cancel',fn:closeModal},{l:'Create Entry',p:true,fn:()=>{
+    const chosenType=document.getElementById('ghost-type').value;
+    closeModal();
+    // Open editor with name pre-filled
+    S.type=chosenType;
+    S.editing={_t:chosenType,worldId:S.wid,name:ghostName};
+    buildEditor(S.editing,chosenType);
+    // Pre-fill the name field after build
+    setTimeout(()=>{
+      const nf=document.getElementById('ef_name');
+      if(nf){nf.value=ghostName;}
+    },10);
+    goView('edit');
+    document.getElementById('bdel').classList.add('hidden');
+  }}].forEach(b=>{
+    const btn=document.createElement('button');btn.className=b.p?'bp':'bs';
+    btn.textContent=b.l;btn.type='button';btn.addEventListener('click',b.fn);f.appendChild(btn);
+  });
+  document.getElementById('mov').classList.add('on');
 }
 
 // ── NAV ───────────────────────────────────────────────
 function goView(v,skip=false){
-  // Writer unsaved-change guard
   if(S.view==='writer'&&v!=='writer'&&S.wrUnsaved){
     if(!confirm('You have unsaved changes in the Novel Writer. Leave anyway?'))return;
     S.wrUnsaved=false;
@@ -862,7 +893,6 @@ function goView(v,skip=false){
   document.querySelectorAll('.si[data-t]').forEach(x=>x.classList.remove('on'));
   const id=VIDS[v];if(id)document.getElementById(id).classList.add('on');
   S.view=v;if(!skip)localStorage.setItem(VKEY,v);closeSB();
-  // Toggle writer-specific UI
   document.body.classList.toggle('in-writer',v==='writer');
   if(v==='graph')renderGraph();
   if(v==='map'){renderPins();loadMap();}
@@ -872,7 +902,6 @@ function goView(v,skip=false){
   if(v==='notepad')openNotepad();
 }
 function goList(t,skip=false){
-  // Writer unsaved-change guard
   if(S.view==='writer'&&S.wrUnsaved){
     if(!confirm('You have unsaved changes in the Novel Writer. Leave anyway?'))return;
     S.wrUnsaved=false;
@@ -925,6 +954,7 @@ function openDet(id,type){
   if(!e){toast('Not found','err');return;}
   S.cur={...e,_t:type};renderDet(e,type);goView('det');
 }
+
 function renderDet(e,type){
   const fields=FD[type]||[];const m=TM[type]||{};
   const rows=fields.filter(f=>e[f.k]&&f.k!=='name'&&f.k!=='imageUrl').map(f=>`<div class="dfield"><div class="dfl">${f.l}</div><div class="dfv">${rfv(e[f.k]||'')}</div></div>`).join('');
@@ -934,20 +964,53 @@ function renderDet(e,type){
     <div class="dtn">${esc(e.name)}</div>
     <div class="dact"><button class="bp" onclick="editEnt('${e.id}','${type}')">✏ Edit</button>${type==='Locations'?`<button class="bs" onclick="pinOnMap('${e.id}')">📍 Pin on Map</button>`:''}</div>
     ${e.imageUrl?`<img src="${e.imageUrl}" style="max-width:100%;max-height:220px;object-fit:cover;border-radius:var(--rl);margin-bottom:15px;border:1px solid var(--b5);cursor:pointer" onclick="openImgFull(this.src)" loading="lazy"/>`:''}<div class="ddiv"></div>${rows}`;
+
+  // Build connections sidebar
   const linked=S.links.filter(l=>l.sourceId===e.id||l.targetId===e.id);
+
+  // Find ghost connections: ghost entries that list this entity as a source
+  const ghostConnections=Object.values(S.ghosts).filter(g=>g.sources.some(s=>s.id===e.id));
+
+  const realItems=linked.map(l=>{
+    const iS=l.sourceId===e.id;
+    const oid=iS?l.targetId:l.sourceId;
+    const ot=iS?l.targetType:l.sourceType;
+    const oe=S.eidx[oid]||{name:oid};
+    return`<div class="csi" onclick="openDet('${oid}','${ot}')"><span class="cst">${TM[ot]?.i||''}</span><span class="csn">${esc(oe.name||oid)}</span></div>`;
+  }).join('');
+
+  const ghostItems=ghostConnections.map(g=>`
+    <div class="csi-ghost" onclick="createFromGhost('${esc(g.name).replace(/'/g,"\\'")}')">
+      <span class="cst" style="border:1px dashed var(--t4);background:transparent">?</span>
+      <span class="csn-ghost">${esc(g.name)}</span>
+      <span style="font-size:.6rem;color:var(--t4);flex-shrink:0">+ create</span>
+    </div>`).join('');
+
+  const emptyMsg=(!linked.length&&!ghostConnections.length)?'<div style="color:var(--t4);font-size:.78rem;font-style:italic;line-height:1.6;">No connections yet.<br>Use [[Name]] in text to auto-link.</div>':'';
+
   document.getElementById('dsb2c').innerHTML=`
-    <div class="csh">Connections (${linked.length})</div>
-    ${linked.map(l=>{const iS=l.sourceId===e.id;const oid=iS?l.targetId:l.sourceId;const ot=iS?l.targetType:l.sourceType;const oe=S.eidx[oid]||{name:oid};return`<div class="csi" onclick="openDet('${oid}','${ot}')"><span class="cst">${TM[ot]?.i||''}</span><span class="csn">${esc(oe.name||oid)}</span></div>`;}).join('')||'<div style="color:var(--t4);font-size:.78rem;font-style:italic;line-height:1.6;">No connections yet.<br>Use [[Name]] in text to auto-link.</div>'}
-    <button class="adlb" onclick="addLinkM('${e.id}','${type}')">+ Add Manual Link</button>`;
+    <div class="csh">Connections (${linked.length}${ghostConnections.length?'+'+ghostConnections.length+' pending':''})</div>
+    ${realItems}${ghostItems}${emptyMsg}
+    <button class="adlb-minor" onclick="addLinkM('${e.id}','${type}')">+ manual link</button>`;
 }
+
+// rfv: render field value, turning [[Name]] into clickable links.
+// Real entities → blue link. Unknown names → ghost link (italic, dashed).
 function rfv(text){
   if(!text)return'';
   return esc(text).replace(/\[\[([^\]]+)\]\]/g,(_,name)=>{
-    const f=Object.values(S.eidx).find(e=>e.name&&e.name.toLowerCase()===name.toLowerCase());
-    if(f){const t=f._t||TYPES.find(t=>(S.ents[t]||[]).some(e=>e.id===f.id));return`<span class="wlink" onclick="openDet('${f.id}','${t||''}')">${name}</span>`;}
-    return`<span class="wlink" style="opacity:.4;cursor:default">${name}</span>`;
+    const key=name.toLowerCase();
+    const f=Object.values(S.eidx).find(e=>e.name&&e.name.toLowerCase()===key);
+    if(f){
+      const t=f._t||TYPES.find(t=>(S.ents[t]||[]).some(e=>e.id===f.id));
+      return`<span class="wlink" onclick="openDet('${f.id}','${t||''}')">${name}</span>`;
+    }
+    // Ghost link — clicking opens the create dialog
+    const safeName=name.replace(/'/g,"\\'");
+    return`<span class="wlink-ghost" title="Not created yet — click to create" onclick="createFromGhost('${safeName}')">${name}</span>`;
   }).replace(/\n/g,'<br>');
 }
+
 function goBack(){if(S.type&&S.ents[S.type])goList(S.type);else goView('dash');}
 
 // ── EDITOR ────────────────────────────────────────────
@@ -1011,13 +1074,14 @@ async function saveEnt(){
     const i=S.ents[type].findIndex(e=>e.id===saved.id);
     if(i>=0)S.ents[type][i]=saved;else S.ents[type].push(saved);
     S.eidx[saved.id]={...saved,_t:type};
-    // Refresh links from server (backend already updated them via parseLinks)
     S.links=await api({action:'getLinks',worldId:S.wid})||[];
-    // Also derive any [[wikilinks]] client-side and merge, so the panel
-    // shows them instantly even if the server is slow or they are new
     deriveWikiLinks(saved,type);
+    // Rebuild ghosts — the saved entry may resolve some ghost names
+    rebuildGhosts();
     updCounts();toast('Saved!','ok');S.cur={...saved,_t:type};
     if(btn){btn.disabled=false;btn.textContent='Save ⌘S';}
+    // If graph is visible, refresh it so ghost nodes update
+    if(S.view==='graph') renderGraph();
     openDet(saved.id,type);
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='Save ⌘S';}
@@ -1025,30 +1089,20 @@ async function saveEnt(){
   }
 }
 
-// Derive [[wikilink]] connections from all text fields client-side.
-// Removes stale 'mentions' links for this entity, then adds new ones.
-// This mirrors what the Apps Script backend does, but instantly in the browser.
 function deriveWikiLinks(entity,type){
-  const textFields=['description','history','notes','appearance','personality','goals','secrets','consequences','rules','powers','methods','content'];
   const mentioned={};
-  textFields.forEach(field=>{
+  WIKI_FIELDS.forEach(field=>{
     const text=entity[field]||'';
     const matches=text.match(/\[\[([^\]]+)\]\]/g)||[];
     matches.forEach(m=>{
       const name=m.slice(2,-2).trim().toLowerCase();
       const found=Object.values(S.eidx).find(e=>e.name&&e.name.toLowerCase()===name&&e.id!==entity.id);
-      if(found&&!mentioned[found.id]){
-        mentioned[found.id]=true;
-      }
+      if(found&&!mentioned[found.id]) mentioned[found.id]=true;
     });
   });
-  // Remove existing client-side 'mentions' links where sourceId === entity.id
   S.links=S.links.filter(l=>!(l.sourceId===entity.id&&l.relation==='mentions'));
-  // Add new ones
   Object.keys(mentioned).forEach(targetId=>{
-    const target=S.eidx[targetId];
-    if(!target)return;
-    // Avoid duplicating manual links
+    const target=S.eidx[targetId];if(!target)return;
     const alreadyLinked=S.links.some(l=>
       (l.sourceId===entity.id&&l.targetId===targetId)||
       (l.sourceId===targetId&&l.targetId===entity.id)
@@ -1073,8 +1127,13 @@ function confirmDel(){
 }
 async function doDel(){
   const e=S.editing;if(!e?.id)return;const type=e._t||e.type;
-  try{await api({action:'deleteEntity',id:e.id,type});S.ents[type]=(S.ents[type]||[]).filter(x=>x.id!==e.id);delete S.eidx[e.id];updCounts();closeModal();toast('Deleted','ok');goList(type);}
-  catch(err){toast('Failed: '+err.message,'err');}
+  try{
+    await api({action:'deleteEntity',id:e.id,type});
+    S.ents[type]=(S.ents[type]||[]).filter(x=>x.id!==e.id);
+    delete S.eidx[e.id];
+    rebuildGhosts();
+    updCounts();closeModal();toast('Deleted','ok');goList(type);
+  }catch(err){toast('Failed: '+err.message,'err');}
 }
 
 // ── MODAL ─────────────────────────────────────────────
@@ -1091,17 +1150,14 @@ function onMOC(e){if(e.target===document.getElementById('mov'))closeModal();}
 
 // ── LINKS ─────────────────────────────────────────────
 function addLinkM(sid,stype){
-  // Collect IDs already linked to this entry
   const alreadyLinked=new Set(S.links.filter(l=>l.sourceId===sid||l.targetId===sid).map(l=>l.sourceId===sid?l.targetId:l.sourceId));
-  // Build list of linkable entries, excluding self and already-linked
   const others=[];TYPES.forEach(t=>(S.ents[t]||[]).forEach(e=>{if(e.id!==sid&&!alreadyLinked.has(e.id))others.push({id:e.id,name:e.name,type:t});}));
   document.getElementById('mtit').textContent='Add Connection';
   if(!others.length){
     document.getElementById('momb').innerHTML=`<div style="color:var(--t4);font-size:.85rem;padding:6px 0;">All entries are already connected to this one.</div>`;
     const f=document.getElementById('momf');f.innerHTML='';
     const btn=document.createElement('button');btn.className='bs';btn.textContent='Close';btn.type='button';btn.addEventListener('click',closeModal);f.appendChild(btn);
-    document.getElementById('mov').classList.add('on');
-    return;
+    document.getElementById('mov').classList.add('on');return;
   }
   document.getElementById('momb').innerHTML=`
     <div class="ef"><div class="el">Link To <span class="hint">(hold Ctrl/Cmd for multiple)</span></div>
@@ -1118,8 +1174,7 @@ function addLinkM(sid,stype){
     const btn=f.querySelector('.bp');if(btn){btn.disabled=true;btn.textContent='Saving...';}
     try{
       for(const opt of sel){
-        const[tid,tt]=(opt.value||'|').split('|');
-        if(!tid)continue;
+        const[tid,tt]=(opt.value||'|').split('|');if(!tid)continue;
         const lnk=await api({action:'saveLink',worldId:S.wid,sourceId:sid,sourceType:stype,targetId:tid,targetType:tt,relation:rel});
         S.links.push(lnk);
       }
@@ -1238,12 +1293,12 @@ async function placePin(x,y){
 }
 
 // ── GRAPH ─────────────────────────────────────────────
-let _graphAid=null; // animation frame id — cancel before re-rendering
+let _graphAid=null;
 function renderGraph(){
   if(_graphAid!==null){cancelAnimationFrame(_graphAid);_graphAid=null;}
   const cv=document.getElementById('gc');
   const par=cv.parentElement;
-  // Inject filter bar if not present
+
   let filterBar=document.getElementById('graph-filter-bar');
   if(!filterBar){
     filterBar=document.createElement('div');
@@ -1252,7 +1307,12 @@ function renderGraph(){
     par.style.position='relative';
     par.appendChild(filterBar);
   }
-  filterBar.innerHTML=['All',...TYPES].map(t=>`<button class="tlf graph-ft${t==='All'?` on`:''}" style="pointer-events:all" data-ft="${t}">${t==='All'?'All':((TM[t]?.i||'')+' '+t)}</button>`).join('');
+  filterBar.innerHTML=['All',...TYPES,'Ghosts'].map(t=>{
+    const isAll=t==='All',isGhost=t==='Ghosts';
+    const lbl=isAll?'All':isGhost?('👻 Ghosts ('+Object.keys(S.ghosts).length+')'):(TM[t]?.i+' '+t);
+    return`<button class="tlf graph-ft${isAll?' on':''}" style="pointer-events:all" data-ft="${t}">${lbl}</button>`;
+  }).join('');
+
   let activeFilter='All';
   filterBar.querySelectorAll('.graph-ft').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -1262,7 +1322,6 @@ function renderGraph(){
     });
   });
 
-  // Graph viewport transform
   let gZ=1,gOx=0,gOy=0;
   let gPanDrag=false,gPanStart={x:0,y:0},gPanOrigin={x:0,y:0};
   let gPinchDist=null;
@@ -1272,26 +1331,73 @@ function renderGraph(){
     cv.width=par.clientWidth;cv.height=par.clientHeight-filterBar.offsetHeight;
     cv.style.marginTop=filterBar.offsetHeight+'px';
     const ctx=cv.getContext('2d');
-    const nodes=[];const links=[];
-    const types=activeFilter==='All'?TYPES:[activeFilter];
-    types.forEach(t=>(S.ents[t]||[]).forEach(e=>nodes.push({id:e.id,lbl:e.name,type:t,
-      x:Math.random()*(cv.width-120)+60,y:Math.random()*(cv.height-80)+40,vx:0,vy:0})));
+
+    // ── Build real nodes ──────────────────────────────
+    const nodes=[];
+    const types=activeFilter==='All'||activeFilter==='Ghosts'?TYPES:[activeFilter];
+    if(activeFilter!=='Ghosts'){
+      types.forEach(t=>(S.ents[t]||[]).forEach(e=>nodes.push({
+        id:e.id,lbl:e.name,type:t,ghost:false,
+        x:Math.random()*(cv.width-120)+60,
+        y:Math.random()*(cv.height-80)+40,
+        vx:0,vy:0
+      })));
+    }
+
+    // ── Build ghost nodes ─────────────────────────────
+    // Only include ghosts that are mentioned by at least one visible real node
+    const visibleRealIds=new Set(nodes.map(n=>n.id));
+    const ghostNodesToShow=Object.values(S.ghosts).filter(g=>{
+      if(activeFilter==='Ghosts') return true; // show all ghosts in ghost filter
+      // In 'All' or type filter: only show ghosts referenced by a visible node
+      return g.sources.some(s=>visibleRealIds.has(s.id));
+    });
+    ghostNodesToShow.forEach(g=>{
+      nodes.push({
+        id:'ghost__'+g.name.toLowerCase(),
+        lbl:g.name,
+        type:'ghost',
+        ghost:true,
+        ghostName:g.name,
+        x:Math.random()*(cv.width-120)+60,
+        y:Math.random()*(cv.height-80)+40,
+        vx:0,vy:0
+      });
+    });
+
+    // ── Build links ───────────────────────────────────
+    const links=[];
     const nodeIds=new Set(nodes.map(n=>n.id));
-    S.links.forEach(l=>{if(nodeIds.has(l.sourceId)&&nodeIds.has(l.targetId))links.push({s:l.sourceId,t:l.targetId});});
+
+    // Real links between real nodes
+    S.links.forEach(l=>{
+      if(nodeIds.has(l.sourceId)&&nodeIds.has(l.targetId))
+        links.push({s:l.sourceId,t:l.targetId,ghost:false});
+    });
+
+    // Ghost links: real node → ghost node
+    Object.values(S.ghosts).forEach(g=>{
+      const ghostId='ghost__'+g.name.toLowerCase();
+      if(!nodeIds.has(ghostId))return;
+      g.sources.forEach(src=>{
+        if(nodeIds.has(src.id))
+          links.push({s:src.id,t:ghostId,ghost:true});
+      });
+    });
+
     if(!nodes.length){
       ctx.fillStyle='#5a5a7a';ctx.font='14px Crimson Pro,serif';ctx.textAlign='center';
       ctx.fillText('No entries to display',cv.width/2,cv.height/2);return;
     }
-    let sel=null,drag=null;
 
-    function toWorld(cx,cy){return{x:(cx-gOx)/gZ,y:(cy-gOy)/gZ};}
-    function toScreen(wx,wy){return{x:wx*gZ+gOx,y:wy*gZ+gOy};}
+    let sel=null,drag=null;
 
     function sim(){
       for(let i=0;i<nodes.length;i++){
         const a=nodes[i];
         for(let j=i+1;j<nodes.length;j++){
-          const b=nodes[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=3000/(d*d);
+          const b=nodes[j];
+          let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=3000/(d*d);
           a.vx-=dx/d*f;a.vy-=dy/d*f;b.vx+=dx/d*f;b.vy+=dy/d*f;
         }
         a.vx+=(cv.width/2/gZ-a.x)*.001;a.vy+=(cv.height/2/gZ-a.y)*.001;
@@ -1309,69 +1415,138 @@ function renderGraph(){
       });
     }
 
+    // Dashed line helper
+    function dashedLine(ctx,x1,y1,x2,y2,dashLen,gapLen){
+      const dx=x2-x1,dy=y2-y1,dist=Math.sqrt(dx*dx+dy*dy);
+      const steps=Math.floor(dist/(dashLen+gapLen));
+      const ux=dx/dist,uy=dy/dist;
+      ctx.beginPath();
+      for(let i=0;i<steps;i++){
+        const sx=x1+ux*(i*(dashLen+gapLen));
+        const sy=y1+uy*(i*(dashLen+gapLen));
+        ctx.moveTo(sx,sy);
+        ctx.lineTo(sx+ux*dashLen,sy+uy*dashLen);
+      }
+      ctx.stroke();
+    }
+
     function draw(){
       ctx.clearRect(0,0,cv.width,cv.height);
       ctx.save();
       ctx.translate(gOx,gOy);ctx.scale(gZ,gZ);
+
+      // Draw links
       links.forEach(l=>{
         const s=nodes.find(n=>n.id===l.s),t=nodes.find(n=>n.id===l.t);if(!s||!t)return;
-        ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(t.x,t.y);
-        ctx.strokeStyle='rgba(90,90,122,.4)';ctx.lineWidth=1.5/gZ;ctx.stroke();
+        if(l.ghost){
+          // Dashed grey line for ghost connections
+          ctx.strokeStyle='rgba(90,90,122,.35)';ctx.lineWidth=1/gZ;
+          dashedLine(ctx,s.x,s.y,t.x,t.y,6/gZ,4/gZ);
+        } else {
+          ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(t.x,t.y);
+          ctx.strokeStyle='rgba(90,90,122,.4)';ctx.lineWidth=1.5/gZ;ctx.stroke();
+        }
       });
+
+      // Draw nodes
       nodes.forEach(n=>{
-        const m=TM[n.type]||{},iS=n===sel;
-        ctx.beginPath();ctx.arc(n.x,n.y,iS?18:13,0,Math.PI*2);
-        ctx.fillStyle=iS?'#c8a84b':(m.c||'#5a5a7a');ctx.fill();
-        ctx.strokeStyle=iS?'#e0c870':'rgba(255,255,255,.08)';ctx.lineWidth=(iS?2:1)/gZ;ctx.stroke();
-        ctx.fillStyle=iS?'#fff':'#ccccde';
-        ctx.font=(iS?'bold ':'')+Math.max(9,11/gZ)+'px Crimson Pro,serif';
-        ctx.textAlign='center';
-        ctx.fillText(n.lbl.length>16?n.lbl.slice(0,14)+'…':n.lbl,n.x,n.y+25);
+        const iS=n===sel;
+        if(n.ghost){
+          // ── Ghost node: dashed circle, grey ──────────
+          const r=iS?15:10;
+          ctx.save();
+          ctx.setLineDash([3/gZ,3/gZ]);
+          ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
+          ctx.fillStyle=iS?'rgba(90,90,122,.35)':'rgba(40,40,60,.6)';ctx.fill();
+          ctx.strokeStyle=iS?'#c8a84b':'rgba(90,90,122,.7)';ctx.lineWidth=(iS?2:1.5)/gZ;ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+          // "?" in centre
+          ctx.fillStyle=iS?'#c8a84b':'rgba(136,136,170,.8)';
+          ctx.font=(iS?'bold ':'')+Math.max(7,9/gZ)+'px Crimson Pro,serif';
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText('?',n.x,n.y);
+          // Label below
+          ctx.fillStyle=iS?'#c8a84b':'rgba(90,90,122,.9)';
+          ctx.font='italic '+Math.max(8,10/gZ)+'px Crimson Pro,serif';
+          ctx.textBaseline='alphabetic';
+          ctx.fillText(n.lbl.length>14?n.lbl.slice(0,12)+'…':n.lbl,n.x,n.y+(r+12));
+        } else {
+          // ── Real node ────────────────────────────────
+          const m=TM[n.type]||{};
+          ctx.beginPath();ctx.arc(n.x,n.y,iS?18:13,0,Math.PI*2);
+          ctx.fillStyle=iS?'#c8a84b':(m.c||'#5a5a7a');ctx.fill();
+          ctx.strokeStyle=iS?'#e0c870':'rgba(255,255,255,.08)';ctx.lineWidth=(iS?2:1)/gZ;ctx.stroke();
+          ctx.fillStyle=iS?'#fff':'#ccccde';
+          ctx.font=(iS?'bold ':'')+Math.max(9,11/gZ)+'px Crimson Pro,serif';
+          ctx.textAlign='center';ctx.textBaseline='alphabetic';
+          ctx.fillText(n.lbl.length>16?n.lbl.slice(0,14)+'…':n.lbl,n.x,n.y+25);
+        }
       });
       ctx.restore();
-      // Zoom level indicator
       ctx.fillStyle='rgba(90,90,122,.6)';ctx.font='11px Crimson Pro,serif';ctx.textAlign='right';
+      ctx.textBaseline='alphabetic';
       ctx.fillText('⌀ '+Math.round(gZ*100)+'%',cv.width-10,cv.height-8);
+      // Ghost legend hint
+      if(Object.keys(S.ghosts).length>0){
+        ctx.fillStyle='rgba(90,90,122,.5)';ctx.font='10px Crimson Pro,serif';ctx.textAlign='left';
+        ctx.fillText('◌ = referenced but not yet created',12,cv.height-8);
+      }
     }
 
     function loop(){sim();draw();_graphAid=requestAnimationFrame(loop);}
     loop();
 
     function gn(cx,cy){
-      const w=toWorld(cx,cy);
       const r=cv.getBoundingClientRect();
       const mx=cx-r.left,my=cy-r.top;
       const wx=(mx-gOx)/gZ,wy=(my-gOy)/gZ;
-      return nodes.find(n=>Math.hypot(n.x-wx,n.y-wy)<20)||null;
+      return nodes.find(n=>Math.hypot(n.x-wx,n.y-wy)<(n.ghost?14:22))||null;
     }
 
-    // Mouse events
-    cv.onmousedown=e=>{const n=gn(e.clientX,e.clientY);if(n){drag=n;}else{gPanDrag=true;gPanStart={x:e.clientX,y:e.clientY};gPanOrigin={x:gOx,y:gOy};}};
-    window.onmousemove=e=>{
-      if(drag){const r=cv.getBoundingClientRect();const wx=(e.clientX-r.left-gOx)/gZ,wy=(e.clientY-r.top-gOy)/gZ;drag.x=wx;drag.y=wy;}
+    // Mouse events — using addEventListener to avoid clobbering other handlers
+    function onMD(e){
+      const n=gn(e.clientX,e.clientY);
+      if(n){drag=n;}
+      else{gPanDrag=true;gPanStart={x:e.clientX,y:e.clientY};gPanOrigin={x:gOx,y:gOy};}
+    }
+    function onMM(e){
+      if(drag){const r=cv.getBoundingClientRect();drag.x=(e.clientX-r.left-gOx)/gZ;drag.y=(e.clientY-r.top-gOy)/gZ;}
       else if(gPanDrag){gOx=gPanOrigin.x+(e.clientX-gPanStart.x);gOy=gPanOrigin.y+(e.clientY-gPanStart.y);}
-    };
-    window.onmouseup=e=>{
-      if(drag){const n=gn(e.clientX,e.clientY);if(n===drag){sel=sel===n?null:n;if(sel)openDet(sel.id,sel.type);}drag=null;}
+    }
+    function onMU(e){
+      if(drag){
+        const n=gn(e.clientX,e.clientY);
+        if(n===drag){
+          sel=sel===n?null:n;
+          if(sel){
+            if(sel.ghost) createFromGhost(sel.ghostName);
+            else openDet(sel.id,sel.type);
+          }
+        }
+        drag=null;
+      }
       gPanDrag=false;
-    };
-    // Scroll zoom
-    cv.onwheel=e=>{
+    }
+    function onWH(e){
       e.preventDefault();
       const r=cv.getBoundingClientRect();
       const mx=e.clientX-r.left,my=e.clientY-r.top;
       const factor=e.deltaY<0?1.1:0.9;
       const newZ=Math.min(4,Math.max(0.15,gZ*factor));
-      gOx=mx-(mx-gOx)*(newZ/gZ);
-      gOy=my-(my-gOy)*(newZ/gZ);
-      gZ=newZ;
-    },{passive:false};
+      gOx=mx-(mx-gOx)*(newZ/gZ);gOy=my-(my-gOy)*(newZ/gZ);gZ=newZ;
+    }
+    cv.addEventListener('mousedown',onMD);
+    window.addEventListener('mousemove',onMM);
+    window.addEventListener('mouseup',onMU);
+    cv.addEventListener('wheel',onWH,{passive:false});
+
     // Touch events
     cv.ontouchstart=e=>{
       if(e.touches.length===2){
         gPinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
         gPanDrag=false;drag=null;
-      } else if(e.touches.length===1){
+      }else if(e.touches.length===1){
         const t=e.touches[0],n=gn(t.clientX,t.clientY);
         if(n)drag=n;else{gPanDrag=true;gPanStart={x:t.clientX,y:t.clientY};gPanOrigin={x:gOx,y:gOy};}
       }
@@ -1385,18 +1560,22 @@ function renderGraph(){
         const my=(e.touches[0].clientY+e.touches[1].clientY)/2-cv.getBoundingClientRect().top;
         const newZ=Math.min(4,Math.max(0.15,gZ*factor));
         gOx=mx-(mx-gOx)*(newZ/gZ);gOy=my-(my-gOy)*(newZ/gZ);gZ=newZ;
-      } else if(e.touches.length===1){
+      }else if(e.touches.length===1){
         if(drag){const r=cv.getBoundingClientRect();const t=e.touches[0];drag.x=(t.clientX-r.left-gOx)/gZ;drag.y=(t.clientY-r.top-gOy)/gZ;}
         else if(gPanDrag){const t=e.touches[0];gOx=gPanOrigin.x+(t.clientX-gPanStart.x);gOy=gPanOrigin.y+(t.clientY-gPanStart.y);}
       }
     },{passive:false};
     cv.ontouchend=()=>{drag=null;gPanDrag=false;gPinchDist=null;};
 
+    // Cleanup when view is hidden
     const ob=new MutationObserver(()=>{
       if(!cv.closest('.on')){
         cancelAnimationFrame(_graphAid);_graphAid=null;
-        cv.onmousedown=null;window.onmousemove=null;window.onmouseup=null;
-        cv.onwheel=null;cv.ontouchstart=null;cv.ontouchmove=null;cv.ontouchend=null;
+        cv.removeEventListener('mousedown',onMD);
+        window.removeEventListener('mousemove',onMM);
+        window.removeEventListener('mouseup',onMU);
+        cv.removeEventListener('wheel',onWH);
+        cv.ontouchstart=null;cv.ontouchmove=null;cv.ontouchend=null;
         ob.disconnect();
       }
     });
@@ -1418,13 +1597,11 @@ function renderTL(){
     el.innerHTML='<div class="eempty"><div class="eei">📅</div><div class="eet">No events yet</div><p style="font-size:.85rem">Click "+ New Event" to begin.</p></div>';
     if(ff)ff.innerHTML='';return;
   }
-  // Build era list for filters
   const eras=[...new Set(allEvts.map(e=>e.era||'').filter(Boolean))];
   if(ff){
     ff.innerHTML=(eras.length?`<button class="tlf ${!tlEraFilter?'on':''}" onclick="setTlFilter(null)">All</button>`+eras.map(er=>`<button class="tlf ${tlEraFilter===er?'on':''}" onclick="setTlFilter('${esc(er)}')">${esc(er)}</button>`).join(''):'');
   }
   const evts=tlEraFilter?allEvts.filter(e=>e.era===tlEraFilter):allEvts;
-  // Group by era
   const groups={};
   evts.forEach(e=>{const k=e.era||'Uncategorised';if(!groups[k])groups[k]=[];groups[k].push(e);});
   el.innerHTML=Object.entries(groups).map(([era,evs])=>`
@@ -1442,13 +1619,8 @@ function setTlFilter(era){tlEraFilter=era;renderTL();}
 
 // ── MOODBOARD ─────────────────────────────────────────
 function mbKey(){return 'lk_mb_'+S.wid;}
-function loadMoodboard(){
-  if(!S.wid)return;
-  try{S.mbImages=JSON.parse(localStorage.getItem(mbKey())||'[]');}catch(e){S.mbImages=[];}
-}
-function saveMoodboard(){
-  try{localStorage.setItem(mbKey(),JSON.stringify(S.mbImages));}catch(e){toast('Storage full — images may not save','err');}
-}
+function loadMoodboard(){if(!S.wid)return;try{S.mbImages=JSON.parse(localStorage.getItem(mbKey())||'[]');}catch(e){S.mbImages=[];}}
+function saveMoodboard(){try{localStorage.setItem(mbKey(),JSON.stringify(S.mbImages));}catch(e){toast('Storage full — images may not save','err');}}
 function renderMoodboard(){
   const g=document.getElementById('mbgrid');
   if(!S.mbImages.length){
@@ -1457,152 +1629,100 @@ function renderMoodboard(){
   g.innerHTML='';
   S.mbImages.forEach((img,i)=>{
     const card=document.createElement('div');card.className='mbcard';
-    card.innerHTML=`<img class="mbimg" src="${img.src}" loading="lazy" onclick="openImgFull('${img.src.startsWith('data:')?'__'+i:img.src}')"/>
+    card.innerHTML=`<img class="mbimg" src="${img.src}" loading="lazy"/>
       <div class="mbdel" onclick="delMBImg(${i})">✕</div>
       <div class="mbcap" contenteditable="true" data-ph="Add a note…" spellcheck="false">${esc(img.caption||'')}</div>`;
     const cap=card.querySelector('.mbcap');
     cap.addEventListener('blur',()=>{S.mbImages[i].caption=cap.textContent.trim();saveMoodboard();});
-    // fix onclick for base64 images
     const im=card.querySelector('.mbimg');
     im.onclick=()=>openImgFull(img.src);
     g.appendChild(card);
   });
 }
 function onMBFile(e){
-  const files=Array.from(e.target.files);
-  let done=0;
+  const files=Array.from(e.target.files);let done=0;
   files.forEach(f=>{
     const rd=new FileReader();
     rd.onload=ev=>{
       S.mbImages.push({id:'mb_'+Date.now()+'_'+Math.random().toString(36).slice(2),src:ev.target.result,caption:''});
-      done++;
-      if(done===files.length){saveMoodboard();renderMoodboard();toast(files.length+' image'+(files.length>1?'s':'')+' added!','ok');}
-    };
-    rd.readAsDataURL(f);
-  });
-  e.target.value='';
+      done++;if(done===files.length){saveMoodboard();renderMoodboard();toast(files.length+' image'+(files.length>1?'s':'')+' added!','ok');}
+    };rd.readAsDataURL(f);
+  });e.target.value='';
 }
-function delMBImg(i){
-  S.mbImages.splice(i,1);saveMoodboard();renderMoodboard();toast('Removed','ok');
-}
+function delMBImg(i){S.mbImages.splice(i,1);saveMoodboard();renderMoodboard();toast('Removed','ok');}
 function openImgFull(src){
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px';
-  ov.innerHTML=`<img src="${src.startsWith('__')?S.mbImages[parseInt(src.slice(2))].src:src}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r)"/>`;
-  ov.onclick=()=>ov.remove();
-  document.body.appendChild(ov);
+  ov.innerHTML=`<img src="${src}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r)"/>`;
+  ov.onclick=()=>ov.remove();document.body.appendChild(ov);
 }
 
 // ── TEMPLATES ─────────────────────────────────────────
 function tplKey(){return 'lk_tpl_'+S.wid;}
 function loadTemplates(){try{return JSON.parse(localStorage.getItem(tplKey())||'[]');}catch(e){return[];}}
 function saveAsTemplate(data){
-  const name=data.name||'Unnamed';
-  const type=data._t||S.type;
-  // strip id/timestamps so it's a clean copy
+  const name=data.name||'Unnamed';const type=data._t||S.type;
   const tpl={id:'tpl_'+Date.now(),name:'Template: '+name,type,data:{...data,id:'',createdAt:'',updatedAt:'',_t:undefined}};
-  const tpls=loadTemplates();tpls.push(tpl);
-  localStorage.setItem(tplKey(),JSON.stringify(tpls));
-  toast('Saved as template!','ok');
+  const tpls=loadTemplates();tpls.push(tpl);localStorage.setItem(tplKey(),JSON.stringify(tpls));toast('Saved as template!','ok');
 }
 function openTemplates(){
-  const tpls=loadTemplates();
-  const type=S.editing?._t||S.type;
-  const matching=tpls.filter(t=>t.type===type);
+  const tpls=loadTemplates();const type=S.editing?._t||S.type;const matching=tpls.filter(t=>t.type===type);
   document.getElementById('mtit').textContent='Templates — '+type;
   if(!matching.length){
     document.getElementById('momb').innerHTML='<div style="color:var(--t4);font-size:.85rem;padding:8px 0">No templates yet for this type.<br><br>While editing an entry, click <strong style="color:var(--t2)">⎘ Use as Template</strong> to save it.</div>';
     const f=document.getElementById('momf');f.innerHTML='';
     const cb=document.createElement('button');cb.className='bs';cb.textContent='Close';cb.onclick=closeModal;f.appendChild(cb);
-  } else {
+  }else{
     document.getElementById('momb').innerHTML='<div style="display:flex;flex-direction:column;gap:8px">'+
-      matching.map((t,i)=>`<div class="tplcard" onclick="applyTemplate(${i})">
-        <div class="tplname">${esc(t.name)}</div>
-        <div class="tpltype">${TM[t.type]?.i||''} ${t.type}</div>
-      </div>`).join('')+'</div>';
+      matching.map((t,i)=>`<div class="tplcard" onclick="applyTemplate(${i})"><div class="tplname">${esc(t.name)}</div><div class="tpltype">${TM[t.type]?.i||''} ${t.type}</div></div>`).join('')+'</div>';
     const f=document.getElementById('momf');f.innerHTML='';
-    // delete all btn
     const db=document.createElement('button');db.className='bd';db.textContent='Clear All';db.onclick=()=>{const all=loadTemplates().filter(t=>t.type!==type);localStorage.setItem(tplKey(),JSON.stringify(all));closeModal();toast('Templates cleared','ok');};f.appendChild(db);
     const cb=document.createElement('button');cb.className='bs';cb.textContent='Close';cb.onclick=closeModal;f.appendChild(cb);
-    // store matching for applyTemplate
     S._tplList=matching;
   }
   document.getElementById('mov').classList.add('on');
 }
 function applyTemplate(i){
-  const tpl=S._tplList?.[i];if(!tpl)return;
-  const type=tpl.type;
+  const tpl=S._tplList?.[i];if(!tpl)return;const type=tpl.type;
   S.editing={...tpl.data,_t:type,worldId:S.wid,id:'',name:''};
-  buildEditor(S.editing,type);
-  closeModal();
-  document.getElementById('bdel').classList.add('hidden');
+  buildEditor(S.editing,type);closeModal();document.getElementById('bdel').classList.add('hidden');
   toast('Template applied — edit the name and save','ok');
 }
 
-
 // ── NOVEL WRITER ──────────────────────────────────────
 function wrRefsKey(){return 'lk_wrrefs_'+S.wid;}
-
-function loadWrRefs(){
-  if(!S.wid)return;
-  try{S.wrRefs=JSON.parse(localStorage.getItem(wrRefsKey())||'[]');}catch(e){S.wrRefs=[];}
-}
-
-function saveWrRefs(){
-  try{localStorage.setItem(wrRefsKey(),JSON.stringify(S.wrRefs));}catch(e){toast('Storage full','err');}
-}
+function loadWrRefs(){if(!S.wid)return;try{S.wrRefs=JSON.parse(localStorage.getItem(wrRefsKey())||'[]');}catch(e){S.wrRefs=[];}}
+function saveWrRefs(){try{localStorage.setItem(wrRefsKey(),JSON.stringify(S.wrRefs));}catch(e){toast('Storage full','err');}}
 
 async function openWriter(){
   const ta=document.getElementById('wr-text');
-  if(!S.wrDoc){
-    try{S.wrDoc=await api({action:'getDoc',worldId:S.wid,type:'novel'});}
-    catch(e){S.wrDoc=null;}
-  }
-  if(S.wrDoc&&S.wrDoc.content){ta.value=S.wrDoc.content;}
-  // Restore goal in both hidden + drawer input
+  if(!S.wrDoc){try{S.wrDoc=await api({action:'getDoc',worldId:S.wid,type:'novel'});}catch(e){S.wrDoc=null;}}
+  if(S.wrDoc&&S.wrDoc.content)ta.value=S.wrDoc.content;
   const goal=S.wrDoc?.wordGoal||localStorage.getItem('lk_wrgoal_'+S.wid)||'';
   const gi=document.getElementById('wr-goal-inp');if(gi)gi.value=goal||'';
   const gd=document.getElementById('wr-goal-inp-drawer');if(gd)gd.value=goal||'';
-  updWrStats();
-  renderWrRefs();
+  updWrStats();renderWrRefs();
   const ss=document.getElementById('wr-save-status');if(ss)ss.textContent='';
 }
 
 async function openNotepad(){
   const ta=document.getElementById('np-text');
-  if(!S.npDoc){
-    try{
-      S.npDoc=await api({action:'getDoc',worldId:S.wid,type:'notepad'});
-    }catch(e){S.npDoc=null;}
-  }
-  if(S.npDoc&&S.npDoc.content){
-    ta.value=S.npDoc.content;
-  }
+  if(!S.npDoc){try{S.npDoc=await api({action:'getDoc',worldId:S.wid,type:'notepad'});}catch(e){S.npDoc=null;}}
+  if(S.npDoc&&S.npDoc.content)ta.value=S.npDoc.content;
   document.getElementById('np-save-status').textContent='';
 }
 
-function countWords(text){
-  return (text||'').trim().split(/\s+/).filter(w=>w.length>0).length;
-}
+function countWords(text){return (text||'').trim().split(/\s+/).filter(w=>w.length>0).length;}
 
 function updWrStats(){
-  const text=document.getElementById('wr-text').value;
-  const wc=countWords(text);
-  // Get goal from either drawer or hidden input
+  const text=document.getElementById('wr-text').value;const wc=countWords(text);
   const goalInp=document.getElementById('wr-goal-inp-drawer')||document.getElementById('wr-goal-inp');
   const goal=parseInt(goalInp?.value)||0;
-  // Update word count badge in topbar
-  const badge=document.getElementById('wr-wc-badge');
-  if(badge)badge.textContent=wc.toLocaleString()+' words';
-  // Update hidden wr-wc for legacy compat
-  const legWc=document.getElementById('wr-wc');
-  if(legWc)legWc.textContent=wc.toLocaleString();
-  // iPhone HUD
-  const hudWc=document.getElementById('hud-wc-val');
-  if(hudWc)hudWc.textContent=wc.toLocaleString()+' words';
+  const badge=document.getElementById('wr-wc-badge');if(badge)badge.textContent=wc.toLocaleString()+' words';
+  const legWc=document.getElementById('wr-wc');if(legWc)legWc.textContent=wc.toLocaleString();
+  const hudWc=document.getElementById('hud-wc-val');if(hudWc)hudWc.textContent=wc.toLocaleString()+' words';
   const hudPf=document.getElementById('hud-progf');
-  const pw=document.getElementById('wr-prog-wrap');
-  const pb=document.getElementById('wr-prog');
+  const pw=document.getElementById('wr-prog-wrap');const pb=document.getElementById('wr-prog');
   const gt=document.getElementById('wr-goal-txt-drawer')||document.getElementById('wr-goal-txt');
   if(goal>0){
     const pct=Math.min(100,Math.round(wc/goal*100));
@@ -1611,46 +1731,31 @@ function updWrStats(){
     if(gt)gt.textContent=pct+'% of '+goal.toLocaleString()+' words'+(pct>=100?' ✓':'');
     if(hudPf){hudPf.style.width=pct+'%';hudPf.style.background=pct>=100?'var(--ok)':'';}
     localStorage.setItem('lk_wrgoal_'+S.wid,goal);
-  } else {
-    if(pw)pw.style.display='none';
-    if(gt)gt.textContent='';
-    if(hudPf)hudPf.style.width='0%';
+  }else{
+    if(pw)pw.style.display='none';if(gt)gt.textContent='';if(hudPf)hudPf.style.width='0%';
   }
 }
 
 function onWrGoalChange(){
-  // Sync drawer goal input to hidden input for saveWriter
-  const d=document.getElementById('wr-goal-inp-drawer');
-  const h=document.getElementById('wr-goal-inp');
-  if(d&&h)h.value=d.value;
-  updWrStats();
+  const d=document.getElementById('wr-goal-inp-drawer');const h=document.getElementById('wr-goal-inp');
+  if(d&&h)h.value=d.value;updWrStats();
 }
 
-function openWrRefs(){
-  document.getElementById('wr-refs-drawer').classList.add('open');
-  document.getElementById('wr-refs-backdrop').classList.add('on');
-}
-function closeWrRefs(){
-  document.getElementById('wr-refs-drawer').classList.remove('open');
-  document.getElementById('wr-refs-backdrop').classList.remove('on');
-}
+function openWrRefs(){document.getElementById('wr-refs-drawer').classList.add('open');document.getElementById('wr-refs-backdrop').classList.add('on');}
+function closeWrRefs(){document.getElementById('wr-refs-drawer').classList.remove('open');document.getElementById('wr-refs-backdrop').classList.remove('on');}
 
 function onWrInput(){
-  updWrStats();
-  S.wrUnsaved=true;
+  updWrStats();S.wrUnsaved=true;
   document.getElementById('wr-save-status').textContent='Unsaved…';
   const hs=document.getElementById('hud-status');if(hs)hs.textContent='Unsaved…';
-  clearTimeout(S.wrSaveTimer);
-  S.wrSaveTimer=setTimeout(saveWriter,3000);
+  clearTimeout(S.wrSaveTimer);S.wrSaveTimer=setTimeout(saveWriter,3000);
 }
 
 async function saveWriter(){
   const content=document.getElementById('wr-text').value;
-  // Corruption guard: never overwrite with empty if we had content
   if(!content.trim()&&S.wrDoc&&S.wrDoc.content&&S.wrDoc.content.trim().length>50){
     document.getElementById('wr-save-status').textContent='⚠ Empty — not saved';
-    toast('Save blocked: content appears empty. Restore your text first.','err');
-    return;
+    toast('Save blocked: content appears empty. Restore your text first.','err');return;
   }
   const gi=document.getElementById('wr-goal-inp-drawer')||document.getElementById('wr-goal-inp');
   const wordGoal=gi?.value||'0';
@@ -1666,16 +1771,13 @@ async function saveWriter(){
     document.getElementById('wr-save-status').textContent='Save failed ⚠';
     const hs=document.getElementById('hud-status');if(hs)hs.textContent='Save failed ⚠';
     toast('Save failed — your text is safe locally. Retrying in 10s…','err');
-    // Retry once after 10 seconds to recover from transient errors
-    clearTimeout(S.wrSaveTimer);
-    S.wrSaveTimer=setTimeout(saveWriter,10000);
+    clearTimeout(S.wrSaveTimer);S.wrSaveTimer=setTimeout(saveWriter,10000);
   }
 }
 
 function onNpInput(){
   document.getElementById('np-save-status').textContent='Unsaved…';
-  clearTimeout(S.npSaveTimer);
-  S.npSaveTimer=setTimeout(saveNotepad,3000);
+  clearTimeout(S.npSaveTimer);S.npSaveTimer=setTimeout(saveNotepad,3000);
 }
 
 async function saveNotepad(){
@@ -1685,10 +1787,7 @@ async function saveNotepad(){
     S.npDoc=await api({action:'saveDoc',worldId:S.wid,type:'notepad',content});
     document.getElementById('np-save-status').textContent='Saved ✓';
     setTimeout(()=>{const el=document.getElementById('np-save-status');if(el)el.textContent='';},2500);
-  }catch(e){
-    document.getElementById('np-save-status').textContent='Save failed';
-    toast('Save failed: '+e.message,'err');
-  }
+  }catch(e){document.getElementById('np-save-status').textContent='Save failed';toast('Save failed: '+e.message,'err');}
 }
 
 function exportNovel(){
@@ -1697,12 +1796,8 @@ function exportNovel(){
   const w=S.worlds.find(x=>x.id===S.wid);
   const name=(w?.name||'novel').replace(/[^a-z0-9]/gi,'_');
   const blob=new Blob([text],{type:'text/plain'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=name+'_novel.txt';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('Exported!','ok');
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'_novel.txt';a.click();
+  URL.revokeObjectURL(a.href);toast('Exported!','ok');
 }
 
 // ── FOCUS MODE ────────────────────────────────────────
@@ -1711,97 +1806,59 @@ function toggleFocusMode(){
   document.body.classList.toggle('focus-mode',S.focusMode);
   document.getElementById('wr-focus-btn').textContent=S.focusMode?'⛶ Exit Focus':'⛶ Focus';
   if(S.focusMode){
-    // Add exit button if not there
     if(!document.getElementById('focus-exit')){
-      const btn=document.createElement('button');
-      btn.id='focus-exit';btn.textContent='Exit Focus (Esc)';
-      btn.onclick=toggleFocusMode;
-      document.body.appendChild(btn);
+      const btn=document.createElement('button');btn.id='focus-exit';btn.textContent='Exit Focus (Esc)';
+      btn.onclick=toggleFocusMode;document.body.appendChild(btn);
     }
     document.getElementById('focus-exit').style.display='block';
     setTimeout(()=>document.getElementById('wr-text').focus(),100);
-  } else {
-    const fe=document.getElementById('focus-exit');
-    if(fe)fe.style.display='none';
-  }
+  }else{const fe=document.getElementById('focus-exit');if(fe)fe.style.display='none';}
 }
-
-// Exit focus on Escape (add to keyboard handler below)
 
 // ── WRITER REFERENCE IMAGES ───────────────────────────
 function renderWrRefs(){
   const cont=document.getElementById('wr-refs');
-  if(!S.wrRefs.length){
-    cont.innerHTML='<div style="color:var(--t4);font-size:.76rem;text-align:center;padding:20px 0;font-style:italic">No reference images yet</div>';
-    return;
-  }
+  if(!S.wrRefs.length){cont.innerHTML='<div style="color:var(--t4);font-size:.76rem;text-align:center;padding:20px 0;font-style:italic">No reference images yet</div>';return;}
   cont.innerHTML='';
   S.wrRefs.forEach((ref,i)=>{
     const card=document.createElement('div');card.className='wr-ref-card';
-    card.innerHTML=`<img class="wr-ref-img" src="${ref.src}" loading="lazy"/>
-      <div class="wr-ref-del" onclick="delWrRef(${i})">✕</div>`;
-    card.querySelector('img').onclick=()=>openImgFull(ref.src);
-    cont.appendChild(card);
+    card.innerHTML=`<img class="wr-ref-img" src="${ref.src}" loading="lazy"/><div class="wr-ref-del" onclick="delWrRef(${i})">✕</div>`;
+    card.querySelector('img').onclick=()=>openImgFull(ref.src);cont.appendChild(card);
   });
 }
-
 function onWrRefImg(e){
-  const files=Array.from(e.target.files);
-  let done=0;
+  const files=Array.from(e.target.files);let done=0;
   files.forEach(f=>{
     const rd=new FileReader();
     rd.onload=ev=>{
       S.wrRefs.push({id:'ref_'+Date.now()+'_'+Math.random().toString(36).slice(2),src:ev.target.result});
-      done++;
-      if(done===files.length){saveWrRefs();renderWrRefs();toast(files.length+' ref image'+(files.length>1?'s':'')+' added','ok');}
-    };
-    rd.readAsDataURL(f);
-  });
-  e.target.value='';
+      done++;if(done===files.length){saveWrRefs();renderWrRefs();toast(files.length+' ref image'+(files.length>1?'s':'')+' added','ok');}
+    };rd.readAsDataURL(f);
+  });e.target.value='';
 }
+function delWrRef(i){S.wrRefs.splice(i,1);saveWrRefs();renderWrRefs();}
 
-function delWrRef(i){
-  S.wrRefs.splice(i,1);saveWrRefs();renderWrRefs();
-}
-
-// ── DRAG & DROP PANEL REORDER (Desktop) ───────────────
-// Allows reordering sidebar sections via drag on their handles
+// ── DRAG & DROP PANEL REORDER ─────────────────────────
 function initDragPanels(){
   const sidebar=document.getElementById('sidebar');
-  if(sidebar.dataset.dragInit)return; // prevent duplicate listeners
+  if(sidebar.dataset.dragInit)return;
   sidebar.dataset.dragInit='1';
   const sections=sidebar.querySelectorAll('.ss');
   sections.forEach(sec=>{
-    const hdr=sec.querySelector('.ssl');
-    if(!hdr)return;
-    const handle=document.createElement('span');
-    handle.className='drag-handle';handle.textContent='⠿';handle.title='Drag to reorder';
-    hdr.appendChild(handle);
-    sec.draggable=true;
-    sec.classList.add('panel');
-    sec.addEventListener('dragstart',e=>{
-      e.dataTransfer.effectAllowed='move';
-      e.dataTransfer.setData('text/plain',Array.from(sidebar.children).indexOf(sec));
-      setTimeout(()=>sec.classList.add('dragging'),0);
-    });
-    sec.addEventListener('dragend',()=>{
-      sec.classList.remove('dragging');
-      sidebar.querySelectorAll('.panel').forEach(p=>p.classList.remove('drag-over'));
-    });
-    sec.addEventListener('dragover',e=>{
-      e.preventDefault();e.dataTransfer.dropEffect='move';
-      sec.classList.add('drag-over');
-    });
+    const hdr=sec.querySelector('.ssl');if(!hdr)return;
+    const handle=document.createElement('span');handle.className='drag-handle';handle.textContent='⠿';handle.title='Drag to reorder';hdr.appendChild(handle);
+    sec.draggable=true;sec.classList.add('panel');
+    sec.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',Array.from(sidebar.children).indexOf(sec));setTimeout(()=>sec.classList.add('dragging'),0);});
+    sec.addEventListener('dragend',()=>{sec.classList.remove('dragging');sidebar.querySelectorAll('.panel').forEach(p=>p.classList.remove('drag-over'));});
+    sec.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';sec.classList.add('drag-over');});
     sec.addEventListener('dragleave',()=>sec.classList.remove('drag-over'));
     sec.addEventListener('drop',e=>{
       e.preventDefault();sec.classList.remove('drag-over');
       const fromIdx=parseInt(e.dataTransfer.getData('text/plain'));
-      const allChildren=Array.from(sidebar.children);
-      const draggedEl=allChildren[fromIdx];
+      const allChildren=Array.from(sidebar.children);const draggedEl=allChildren[fromIdx];
       if(!draggedEl||draggedEl===sec)return;
       const toIdx=allChildren.indexOf(sec);
-      if(fromIdx<toIdx)sidebar.insertBefore(draggedEl,sec.nextSibling);
-      else sidebar.insertBefore(draggedEl,sec);
+      if(fromIdx<toIdx)sidebar.insertBefore(draggedEl,sec.nextSibling);else sidebar.insertBefore(draggedEl,sec);
     });
   });
 }
@@ -1828,13 +1885,8 @@ function toast(msg,type=''){const el=document.createElement('div');el.className=
 
 window.addEventListener('load',boot);
 
-// Prevent accidental page close/refresh with unsaved writer content
 window.addEventListener('beforeunload',e=>{
-  if(S.wrUnsaved){
-    e.preventDefault();
-    e.returnValue='You have unsaved changes in the Novel Writer.';
-    return e.returnValue;
-  }
+  if(S.wrUnsaved){e.preventDefault();e.returnValue='You have unsaved changes in the Novel Writer.';return e.returnValue;}
 });
 </script>
 </body>
