@@ -826,22 +826,33 @@ function rebuildGhosts(){
   const newGhosts={};
   TYPES.forEach(type=>{
     (S.ents[type]||[]).forEach(entity=>{
+      // Scan [[wikilink]] syntax in all text fields
       WIKI_FIELDS.forEach(field=>{
         const text=entity[field]||'';
         const matches=text.match(/\[\[([^\]]+)\]\]/g)||[];
         matches.forEach(m=>{
           const rawName=m.slice(2,-2).trim();
+          if(!rawName) return;
           const key=rawName.toLowerCase();
-          // Only ghost if no real entity with this name exists
           const exists=Object.values(S.eidx).some(e=>e.name&&e.name.toLowerCase()===key);
           if(!exists){
             if(!newGhosts[key]) newGhosts[key]={name:rawName,sources:[]};
-            // Avoid duplicate sources
-            if(!newGhosts[key].sources.some(s=>s.id===entity.id)){
+            if(!newGhosts[key].sources.some(s=>s.id===entity.id))
               newGhosts[key].sources.push({id:entity.id,type});
-            }
           }
         });
+      });
+      // Scan plain reference fields (race, faction, birthPlace, etc.)
+      REF_FIELDS.forEach(field=>{
+        const rawName=(entity[field]||'').trim();
+        if(!rawName) return;
+        const key=rawName.toLowerCase();
+        const exists=Object.values(S.eidx).some(e=>e.name&&e.name.toLowerCase()===key);
+        if(!exists){
+          if(!newGhosts[key]) newGhosts[key]={name:rawName,sources:[]};
+          if(!newGhosts[key].sources.some(s=>s.id===entity.id))
+            newGhosts[key].sources.push({id:entity.id,type});
+        }
       });
     });
   });
@@ -1126,14 +1137,14 @@ async function saveEnt(){
     const i=S.ents[type].findIndex(e=>e.id===saved.id);
     if(i>=0)S.ents[type][i]=saved;else S.ents[type].push(saved);
     S.eidx[saved.id]={...saved,_t:type};
+    // Fetch current server links, then derive+persist new wiki/ref links
     S.links=await api({action:'getLinks',worldId:S.wid})||[];
-    deriveWikiLinks(saved,type);
+    await deriveAndPersistLinks(saved,type);
     // Rebuild ghosts — the saved entry may resolve some ghost names
     rebuildGhosts();
     updCounts();toast('Saved!','ok');S.cur={...saved,_t:type};
     if(btn){btn.disabled=false;btn.textContent='Save ⌘S';}
-    // If graph is visible, refresh it so ghost nodes update
-    if(S.view==='graph') renderGraph();
+    if(S.view==='graph') _graphSoftRefresh ? _graphSoftRefresh() : renderGraph();
     openDet(saved.id,type);
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='Save ⌘S';}
@@ -1141,8 +1152,14 @@ async function saveEnt(){
   }
 }
 
-function deriveWikiLinks(entity,type){
+// Fields that are plain-text references to other entries (no [[]] needed)
+const REF_FIELDS=['race','faction','birthPlace','location','parentLocation',
+  'headquarters','leader','causedBy','currentHolder','homeland','practitioners','origin'];
+
+// Collect all entries this entity references (via [[]] or ref fields)
+function collectMentioned(entity){
   const mentioned={};
+  // 1. [[wikilink]] syntax in textarea fields
   WIKI_FIELDS.forEach(field=>{
     const text=entity[field]||'';
     const matches=text.match(/\[\[([^\]]+)\]\]/g)||[];
@@ -1152,6 +1169,19 @@ function deriveWikiLinks(entity,type){
       if(found&&!mentioned[found.id]) mentioned[found.id]=true;
     });
   });
+  // 2. Plain reference fields
+  REF_FIELDS.forEach(field=>{
+    const val=(entity[field]||'').trim().toLowerCase();
+    if(!val) return;
+    const found=Object.values(S.eidx).find(e=>e.name&&e.name.toLowerCase()===val&&e.id!==entity.id);
+    if(found&&!mentioned[found.id]) mentioned[found.id]=true;
+  });
+  return mentioned;
+}
+
+// Derive links client-side only (used for live ghost detection)
+function deriveWikiLinks(entity,type){
+  const mentioned=collectMentioned(entity);
   S.links=S.links.filter(l=>!(l.sourceId===entity.id&&l.relation==='mentions'));
   Object.keys(mentioned).forEach(targetId=>{
     const target=S.eidx[targetId];if(!target)return;
@@ -1170,6 +1200,40 @@ function deriveWikiLinks(entity,type){
       });
     }
   });
+}
+
+// Derive links AND persist new ones to the server (used after saveEnt)
+async function deriveAndPersistLinks(entity,type){
+  const mentioned=collectMentioned(entity);
+  // Remove old client-side mention links for this entity
+  S.links=S.links.filter(l=>!(l.sourceId===entity.id&&l.relation==='mentions'));
+  for(const targetId of Object.keys(mentioned)){
+    const target=S.eidx[targetId];if(!target)continue;
+    const alreadyLinked=S.links.some(l=>
+      (l.sourceId===entity.id&&l.targetId===targetId)||
+      (l.sourceId===targetId&&l.targetId===entity.id)
+    );
+    if(!alreadyLinked){
+      try{
+        // Persist to server so it survives reload
+        const lnk=await api({action:'saveLink',worldId:S.wid,
+          sourceId:entity.id,sourceType:type,
+          targetId,targetType:target._t||'',
+          relation:'mentions'});
+        S.links.push(lnk);
+      }catch(e){
+        // Fallback: keep client-side link if server fails
+        S.links.push({
+          id:'lnk_client_'+entity.id+'_'+targetId,
+          worldId:entity.worldId,
+          sourceId:entity.id,sourceType:type,
+          targetId,targetType:target._t||'',
+          relation:'mentions',
+          createdAt:new Date().toISOString()
+        });
+      }
+    }
+  }
 }
 function cancelEdit(){if(S.cur)openDet(S.cur.id,S.cur._t);else goList(S.type);}
 function confirmDel(){
@@ -1346,6 +1410,7 @@ async function placePin(x,y){
 
 // ── GRAPH ─────────────────────────────────────────────
 let _graphAid=null;
+let _graphSoftRefresh=null; // set by renderGraph, allows soft refresh without reset
 function renderGraph(){
   if(_graphAid!==null){cancelAnimationFrame(_graphAid);_graphAid=null;}
   const cv=document.getElementById('gc');
@@ -1397,12 +1462,14 @@ function renderGraph(){
     }
 
     // ── Build ghost nodes ─────────────────────────────
-    // Only include ghosts that are mentioned by at least one visible real node
+    // Include ghosts that are referenced by any real entity (visible or not),
+    // or all ghosts when the Ghosts filter is active.
     const visibleRealIds=new Set(nodes.map(n=>n.id));
+    const allRealIds=new Set(Object.keys(S.eidx));
     const ghostNodesToShow=Object.values(S.ghosts).filter(g=>{
-      if(activeFilter==='Ghosts') return true; // show all ghosts in ghost filter
-      // In 'All' or type filter: only show ghosts referenced by a visible node
-      return g.sources.some(s=>visibleRealIds.has(s.id));
+      if(activeFilter==='Ghosts') return true;
+      // Show ghost if any of its sources is a real entity (not __editing__)
+      return g.sources.some(s=>s.id!=='__editing__'&&allRealIds.has(s.id));
     });
     ghostNodesToShow.forEach(g=>{
       nodes.push({
@@ -1428,10 +1495,21 @@ function renderGraph(){
     });
 
     // Ghost links: real node → ghost node
+    // If source node isn't in the current filter view, add it as a minimal node too
     Object.values(S.ghosts).forEach(g=>{
       const ghostId='ghost__'+g.name.toLowerCase();
       if(!nodeIds.has(ghostId))return;
       g.sources.forEach(src=>{
+        if(src.id==='__editing__') return;
+        // Add source node if not already present (e.g. filtered out by type)
+        if(!nodeIds.has(src.id)){
+          const srcEnt=S.eidx[src.id];
+          if(srcEnt){
+            const n={id:src.id,lbl:srcEnt.name,type:src.type,ghost:false,
+              x:Math.random()*(cv.width-120)+60,y:Math.random()*(cv.height-80)+40,vx:0,vy:0};
+            nodes.push(n);nodeIds.add(src.id);
+          }
+        }
         if(nodeIds.has(src.id))
           links.push({s:src.id,t:ghostId,ghost:true});
       });
@@ -1633,9 +1711,9 @@ function renderGraph(){
     });
     ob.observe(document.getElementById('vgraph'),{attributes:true,attributeFilter:['class']});
   }
+  _graphSoftRefresh=rebuildGraph;
   rebuildGraph();
 }
-
 // ── TIMELINE ──────────────────────────────────────────
 let tlEraFilter=null;
 function renderTL(){
